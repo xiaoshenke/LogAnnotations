@@ -167,7 +167,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         TypeElement classTypeElement = elementUtils.getTypeElement(iterator.next());
         PackageElement packageElement = elementUtils.getPackageOf(classTypeElement);
 
-        ClassInheritanceHelper helper = ClassInheritanceHelper.getInstance(elementUtils, packageElement);
+        //ClassInheritanceHelper helper = ClassInheritanceHelper.getInstance(elementUtils, packageElement);
 
     }
 
