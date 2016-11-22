@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/LogAnnotationsDemo.iml" filepath="$PROJECT_DIR$/LogAnnotationsDemo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/LogAnnotations.iml" filepath="$PROJECT_DIR$/LogAnnotations.iml" />
+      <module fileurl="file://$PROJECT_DIR$/annotations/annotations.iml" filepath="$PROJECT_DIR$/annotations/annotations.iml" />
+      <module fileurl="file://$PROJECT_DIR$/annotations-compiler/annotations-compiler.iml" filepath="$PROJECT_DIR$/annotations-compiler/annotations-compiler.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
