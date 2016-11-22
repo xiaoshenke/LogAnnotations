@@ -5,6 +5,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
@@ -157,7 +159,16 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
      * 子类自动继承所有父类的@Log annotation
      */
     private void dealClassInheritation() {
-        ;
+        Set<String> classNames = mGroupedMethodsMap.keySet();
+        Iterator<String> iterator = classNames.iterator();
+        if (!iterator.hasNext()) {
+            return;
+        }
+        TypeElement classTypeElement = elementUtils.getTypeElement(iterator.next());
+        PackageElement packageElement = elementUtils.getPackageOf(classTypeElement);
+
+        ClassInheritanceHelper helper = ClassInheritanceHelper.getInstance(elementUtils, packageElement);
+
     }
 
     /**
