@@ -27,6 +27,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 
@@ -45,11 +46,17 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     private Messager messager;
 
     //Map<classname,list<method>>
+    //不含被NoLog注解的class
     private final @NonNull Map<String, List<AnnotatedMethod>> mGroupedMethodsMap =
             new LinkedHashMap<>();
 
-    //merge结果map class没有superclass的时候自动为true,否则为false,只有merge过才记为true
+    //merge结果map class没有superclass的时候自动为true,否则为false,只有merge过才记为true,
+    //包括被NoLog注解的class
     private final Map<String, Boolean> mMergedClassMap = new HashMap<>();
+
+    //存储所有class的methods,
+    //包括被NoLog注解的class
+    private final Map<String, List<AnnotatedMethod>> mAllMethodsMap = new LinkedHashMap<>();
 
     @Override
     public synchronized void init(@NonNull ProcessingEnvironment env) {
@@ -184,41 +191,86 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         iterator = classNames.iterator();  //重新赋值
         while (iterator.hasNext()) {
             String className = iterator.next();
-            if (mMergedClassMap.containsKey(className)) { //该结点已经被处理
-                continue;
+            if (!mMergedClassMap.containsKey(className)) { //该结点未处理 先去处理
+                recursiveDealClass(helper, className);
             }
-            recursiveDealClass(helper, className);
+
+            mGroupedMethodsMap.put(className, mAllMethodsMap.get(className));
         }
     }
 
     private void recursiveDealClass(ClassInheritanceHelper helper, String className) {
+
+        if (mGroupedMethodsMap.containsKey(className)) {
+            mAllMethodsMap.put(className, mGroupedMethodsMap.get(className));
+        } else {
+            mAllMethodsMap.put(className, new ArrayList<AnnotatedMethod>());
+        }
+
         String superClass = helper.getSuperClass(className);
         if (superClass == null) {                           //没有superclass 不需要merge过程
             mMergedClassMap.put(className, true);
             return;
         }
 
-        if (!mGroupedMethodsMap.containsKey(superClass)) { //尽管该class有superclass 但该superclass没有被注解的函数 因此不需要merge过程
-            mMergedClassMap.put(className, true);
-            return;
-        }
-
-        if (!mMergedClassMap.containsKey(superClass)) { //父结点没有被处理 先处理父结点
+        if (!mMergedClassMap.containsKey(superClass)) { //父结点没有被处理 去处理父结点
             recursiveDealClass(helper, superClass);
         }
 
-        mergeMethod(mGroupedMethodsMap.get(superClass), mGroupedMethodsMap.get(className));
+        mergeMethod(mAllMethodsMap.get(className), mAllMethodsMap.get(superClass));
         mMergedClassMap.put(className, true);
     }
 
     /**
-     * 去重？子annotated的标记比如public protectd,参数的不同会被认为是不同的method么？
-     * TODO: debug and test
+     * 去重 这里的去重有问题 因为AnnotatedMethod的比较是有问题的
      */
-    private void mergeMethod(List<AnnotatedMethod> to, List<AnnotatedMethod> from) {
-        to.removeAll(from); //先去重
-        to.addAll(from);    //再合并
+    private void mergeMethod(List<AnnotatedMethod> toList, List<AnnotatedMethod> fromList) {
+
+        for (AnnotatedMethod from : fromList) {
+            boolean same = false;
+            for (AnnotatedMethod to : toList) {
+                ExecutableElement toEle = to.getExecutableElement();
+                ExecutableElement fromEle = from.getExecutableElement();
+                if (compare(toEle, fromEle)) {
+                    same = true;
+                    break;
+                }
+            }
+
+            if (!same) {
+                toList.add(from);
+            }
+        }
         return;
+    }
+
+    /**
+     * true: the same,false: different
+     * 这里我认为名字 参数个数和类型 返回值都一致时认为同一函数 不管private public等
+     */
+    private boolean compare(@NonNull ExecutableElement to, @NonNull ExecutableElement from) {
+        if (!to.getSimpleName().equals(from.getSimpleName())) {
+            return false;
+        }
+
+        if (!to.getReturnType().equals(from.getReturnType())) {
+            return false;
+        }
+
+        if (to.getParameters().size() != from.getParameters().size()) {
+            return false;
+        } else {
+            List<? extends VariableElement> toParams = to.getParameters();
+            List<? extends VariableElement> fromParams = from.getParameters();
+
+            for (int i = 0; i < toParams.size(); i++) {
+                if (!toParams.get(i).asType().equals(fromParams.get(i).asType())) { //类型不同
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**

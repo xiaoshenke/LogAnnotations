@@ -12,4 +12,9 @@ public class SubA extends A {
     private void call(String name, String xing) {
         ;
     }
+
+    @Log
+    public void call(String name) {
+        ;
+    }
 }

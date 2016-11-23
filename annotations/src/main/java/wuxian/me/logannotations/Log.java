@@ -9,6 +9,8 @@ import java.lang.annotation.Target;
  * Created by wuxian on 22/11/2016.
  * <p>
  * level: -1-->no log,0-->info,1-->debug,2-->error
+ *
+ * 具有继承属性 父类被@Log 注解的函数,子类中不要再注解一次@Log,但是会忽略具有@NoLog注解的类里的所有Log函数
  */
 
 @Retention(RetentionPolicy.CLASS) //编译期
