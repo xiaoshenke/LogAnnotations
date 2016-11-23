@@ -183,7 +183,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
 
         ClassInheritanceHelper helper;
         try {
-            helper = ClassInheritanceHelper.getInstance(messager, elementUtils, packageElement);
+            helper = ClassInheritanceHelper.getInstance(messager, elementUtils);
         } catch (ProcessingException e) {
             return;
         }
@@ -252,11 +252,9 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         if (!to.getSimpleName().equals(from.getSimpleName())) {
             return false;
         }
-
         if (!to.getReturnType().equals(from.getReturnType())) {
             return false;
         }
-
         if (to.getParameters().size() != from.getParameters().size()) {
             return false;
         } else {
@@ -269,7 +267,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
                 }
             }
         }
-
         return true;
     }
 
@@ -278,7 +275,8 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
      * 写文件
      */
     private void writeLogsToJavaFile() {
-        ;
+
+
     }
 
     public static void error(@NonNull Messager messager, @Nullable Element e, @NonNull String msg, @Nullable Object... args) {
