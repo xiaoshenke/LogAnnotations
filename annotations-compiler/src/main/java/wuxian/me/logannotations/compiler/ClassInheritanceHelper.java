@@ -237,7 +237,7 @@ public class ClassInheritanceHelper {
     @Nullable
     private String getSuperClassFrom(@NonNull File file, @NonNull String packageName, @NonNull String className) {
         //class A extends B implements C {
-        Pattern pattern = Pattern.compile(String.format("class\\s+%s\\s+extends\\s+[\\w]+.*{", className));
+        Pattern pattern = Pattern.compile(String.format("class\\s+%s\\s+extends\\s+[\\w]+.*\\{", className));
 
         StringBuilder builder = new StringBuilder("");
         BufferedReader reader = null;
@@ -289,13 +289,13 @@ public class ClassInheritanceHelper {
         }
 
         //extends your-super-class{
-        Pattern pattern1 = Pattern.compile(String.format("(?<=extends[\\s]+)%s(?=[{\\s])", className));
+        Pattern pattern1 = Pattern.compile(String.format("(?<=extends)[\\s][\\w]+(?=[{\\s])"));
         Matcher matcher = pattern1.matcher(builder.toString());
         if (!matcher.find()) {
             return null;
         }
 
-        String superClass = matcher.group();
+        String superClass = matcher.group().trim();
 
         //import your-super-class-package.superclass;
         Pattern pattern2 = Pattern.compile(String.format("import.+%s\\s*;", superClass));
@@ -303,10 +303,10 @@ public class ClassInheritanceHelper {
 
         String superPackage = packageName; //默认在该包下
         if (matcher1.find()) { //存在import 说明在其它package下
-            Pattern pattern3 = Pattern.compile(String.format("(?<=import\\s+).+(?=\\.%s\\s*;)", superClass));
+            Pattern pattern3 = Pattern.compile(String.format("(?<=import)\\s+[\\s.\\w]+(?=.%s\\s*;)", superClass));
             Matcher matcher2 = pattern3.matcher(matcher1.group());
             if (matcher2.find()) {
-                superPackage = matcher2.group();
+                superPackage = matcher2.group().trim();
             }
         }
 

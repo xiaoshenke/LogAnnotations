@@ -78,7 +78,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
 
     private void collectAnnotations(Class<? extends Annotation> annotationClass, @NonNull RoundEnvironment roundEnv) throws ProcessingException {
         Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(annotationClass);
-        //info(messager, null, "Processing %d elements annotated with @%s", elements.size(), elements);
 
         for (Element element : elements) {
             if (element.getKind() != ElementKind.METHOD) {
@@ -88,7 +87,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             } else {
                 ExecutableElement executableElement = (ExecutableElement) element;
                 try {
-                    info(messager, null, String.format("process method %s", executableElement.getSimpleName().toString()));
                     processMethod(executableElement, annotationClass, roundEnv);
                 } catch (IllegalArgumentException e) {
                     throw new ProcessingException(executableElement, e.getMessage());
@@ -107,7 +105,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
                             executableElement.getSimpleName().toString()));
         } else {
             if (enclosingClass.getAnnotation(NoLog.class) != null) { //类被NoLog注解 不处理这个类里面的log
-                info(messager, null, "annotated by NoLog");
                 return;
             }
 
@@ -116,7 +113,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             List<AnnotatedMethod> groupedMethods = mGroupedMethodsMap.get(className);
             if (groupedMethods == null) {
                 groupedMethods = new ArrayList<>();
-                info(messager, null, String.format("add class:%s to mGroupedMethodMap", className));
                 mGroupedMethodsMap.put(className, groupedMethods);
             }
             groupedMethods.add(annotatedMethod);
@@ -178,7 +174,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         TypeElement classTypeElement = elementUtils.getTypeElement(iterator.next());
         PackageElement packageElement = elementUtils.getPackageOf(classTypeElement);
 
-        info(messager, null, "begin init helper");
         ClassInheritanceHelper helper;
         try {
             helper = ClassInheritanceHelper.getInstance(messager, elementUtils, packageElement);
@@ -186,7 +181,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             return;
         }
 
-        info(messager, null, "begin deal inheritance after init helper");
         iterator = classNames.iterator();  //重新赋值
         while (iterator.hasNext()) {
             String className = iterator.next();
@@ -215,7 +209,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
 
         mergeMethod(mGroupedMethodsMap.get(superClass), mGroupedMethodsMap.get(className));
         mMergedClassMap.put(className, true);
-
     }
 
     /**
