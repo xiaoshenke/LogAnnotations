@@ -93,7 +93,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
 
     private void processMethod(ExecutableElement executableElement, Class<? extends Annotation> annotationClass) throws ProcessingException {
         AnnotatedMethod annotatedMethod = new AnnotatedMethod(executableElement, annotationClass);
-        checkMethodValidity(annotatedMethod);
+        //checkMethodValidity(annotatedMethod);
         TypeElement enclosingClass = findEnclosingClass(annotatedMethod);
         if (enclosingClass == null) {
             throw new ProcessingException(null,

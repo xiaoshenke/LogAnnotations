@@ -6,19 +6,15 @@ import wuxian.me.logannotations.Log;
  * Created by wuxian on 23/11/2016.
  */
 
-public class SubMainActivity
-
-
-        extends MainActivity implements IWhatever {
+public class BaseA {
 
     @Log
-    @Override
-    protected void testA() {
+    protected void call() {
         ;
     }
 
     @Log
-    private void testC() {
+    protected void call(String name) {
         ;
     }
 }
