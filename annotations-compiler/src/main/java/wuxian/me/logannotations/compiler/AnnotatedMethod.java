@@ -5,6 +5,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.lang.annotation.Annotation;
 
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 
 import wuxian.me.logannotations.Log;
 

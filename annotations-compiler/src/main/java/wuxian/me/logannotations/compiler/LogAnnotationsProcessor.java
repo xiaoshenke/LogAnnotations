@@ -4,6 +4,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import wuxian.me.logannotations.Log;
+import wuxian.me.logannotations.NoLog;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -33,6 +35,7 @@ import javax.tools.Diagnostic;
  * <p>
  */
 
+@SupportedAnnotationTypes(value = {"wuxian.me.logannotations.Log", "wuxian.me.logannotations.NoLog"})
 public class LogAnnotationsProcessor extends AbstractProcessor {
     @NonNull
     private Elements elementUtils;
@@ -54,26 +57,28 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         messager = processingEnv.getMessager();
         filer = processingEnv.getFiler();
         elementUtils = processingEnv.getElementUtils();
-        info(messager, null, "init annotation processor");
     }
 
     @Override
     public boolean process(@NonNull Set<? extends TypeElement> set,
                            @NonNull RoundEnvironment roundEnv) {
-        info(messager, null, "begin to process annotations");
+        info(messager, null, "begin to collect annotations");
         try {
             collectAnnotations(Log.class, roundEnv);
         } catch (ProcessingException e) {
             error(messager, e.getElement(), e.getMessage());
         }
-        dealClassInheritation();
+        info(messager, null, "begin to deal class inheritance");
+        dealClassInheritance();
+
+        info(messager, null, "begin to write log");
         writeLogsToJavaFile();
         return true;
     }
 
     private void collectAnnotations(Class<? extends Annotation> annotationClass, @NonNull RoundEnvironment roundEnv) throws ProcessingException {
         Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(annotationClass);
-        info(messager, null, "Processing %d elements annotated with @%s", elements.size(), elements);
+        //info(messager, null, "Processing %d elements annotated with @%s", elements.size(), elements);
 
         for (Element element : elements) {
             if (element.getKind() != ElementKind.METHOD) {
@@ -83,7 +88,8 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             } else {
                 ExecutableElement executableElement = (ExecutableElement) element;
                 try {
-                    processMethod(executableElement, annotationClass);
+                    info(messager, null, String.format("process method %s", executableElement.getSimpleName().toString()));
+                    processMethod(executableElement, annotationClass, roundEnv);
                 } catch (IllegalArgumentException e) {
                     throw new ProcessingException(executableElement, e.getMessage());
                 }
@@ -91,19 +97,26 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         }
     }
 
-    private void processMethod(ExecutableElement executableElement, Class<? extends Annotation> annotationClass) throws ProcessingException {
-        AnnotatedMethod annotatedMethod = new AnnotatedMethod(executableElement, annotationClass);
+    private void processMethod(ExecutableElement executableElement, Class<? extends Annotation> annotationClass, @NonNull RoundEnvironment roundEnv) throws ProcessingException {
         //checkMethodValidity(annotatedMethod);
-        TypeElement enclosingClass = findEnclosingClass(annotatedMethod);
+        TypeElement enclosingClass = findEnclosingClass(executableElement);
+
         if (enclosingClass == null) {
             throw new ProcessingException(null,
                     String.format("Can not find enclosing class for method %s",
                             executableElement.getSimpleName().toString()));
         } else {
+            if (enclosingClass.getAnnotation(NoLog.class) != null) { //类被NoLog注解 不处理这个类里面的log
+                info(messager, null, "annotated by NoLog");
+                return;
+            }
+
+            AnnotatedMethod annotatedMethod = new AnnotatedMethod(executableElement, annotationClass);
             String className = enclosingClass.getQualifiedName().toString();  //将该element存入一个class的map中
             List<AnnotatedMethod> groupedMethods = mGroupedMethodsMap.get(className);
             if (groupedMethods == null) {
                 groupedMethods = new ArrayList<>();
+                info(messager, null, String.format("add class:%s to mGroupedMethodMap", className));
                 mGroupedMethodsMap.put(className, groupedMethods);
             }
             groupedMethods.add(annotatedMethod);
@@ -112,6 +125,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
 
     /**
      * 合法性校验 被@Log注解的函数不能是PRIVATE,PROTECTED,ABSTRACT
+     * ??????
      */
     private void checkMethodValidity(@NonNull AnnotatedMethod item) throws ProcessingException {
         ExecutableElement methodElement = item.getExecutableElement();
@@ -138,10 +152,10 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
      * 找到method从属的class
      */
     @Nullable
-    private TypeElement findEnclosingClass(@NonNull AnnotatedMethod annotatedMethod) {
+    private TypeElement findEnclosingClass(@NonNull ExecutableElement element) {
         TypeElement enclosingClass;
 
-        ExecutableElement methodElement = annotatedMethod.getExecutableElement();
+        ExecutableElement methodElement = element;
         while (true) {
             Element enclosingElement = methodElement.getEnclosingElement();
             if (enclosingElement.getKind() == ElementKind.CLASS) {
@@ -155,7 +169,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     /**
      * 子类自动继承所有父类的@Log annotation
      */
-    private void dealClassInheritation() {
+    private void dealClassInheritance() {
         Set<String> classNames = mGroupedMethodsMap.keySet();
         Iterator<String> iterator = classNames.iterator();
         if (!iterator.hasNext()) {
@@ -164,6 +178,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         TypeElement classTypeElement = elementUtils.getTypeElement(iterator.next());
         PackageElement packageElement = elementUtils.getPackageOf(classTypeElement);
 
+        info(messager, null, "begin init helper");
         ClassInheritanceHelper helper;
         try {
             helper = ClassInheritanceHelper.getInstance(messager, elementUtils, packageElement);
@@ -171,6 +186,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             return;
         }
 
+        info(messager, null, "begin deal inheritance after init helper");
         iterator = classNames.iterator();  //重新赋值
         while (iterator.hasNext()) {
             String className = iterator.next();
