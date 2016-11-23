@@ -3,9 +3,10 @@ package wuxian.me.logannotations.compiler;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import wuxian.me.logannotations.Log;
+import wuxian.me.logannotations.LOG;
 import wuxian.me.logannotations.NoLog;
 
+import java.io.File;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +26,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
@@ -36,7 +36,7 @@ import javax.tools.Diagnostic;
  * <p>
  */
 
-@SupportedAnnotationTypes(value = {"wuxian.me.logannotations.Log", "wuxian.me.logannotations.NoLog"})
+@SupportedAnnotationTypes(value = {"wuxian.me.logannotations.LOG", "wuxian.me.logannotations.NoLog"})
 public class LogAnnotationsProcessor extends AbstractProcessor {
     @NonNull
     private Elements elementUtils;
@@ -71,14 +71,14 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
                            @NonNull RoundEnvironment roundEnv) {
         info(messager, null, "begin to collect annotations");
         try {
-            collectAnnotations(Log.class, roundEnv);
+            collectAnnotations(LOG.class, roundEnv);
         } catch (ProcessingException e) {
             error(messager, e.getElement(), e.getMessage());
         }
         info(messager, null, "begin to deal class inheritance");
         dealClassInheritance();
 
-        info(messager, null, "begin to write log");
+        info(messager, null, "begin to save log");
         writeLogsToJavaFile();
         return true;
     }
@@ -170,17 +170,11 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     }
 
     /**
-     * 子类自动继承所有父类的@Log annotation
+     * 子类自动继承所有父类的@LOG annotation
      */
     private void dealClassInheritance() {
         Set<String> classNames = mGroupedMethodsMap.keySet();
-        Iterator<String> iterator = classNames.iterator();
-        if (!iterator.hasNext()) {
-            return;
-        }
-        TypeElement classTypeElement = elementUtils.getTypeElement(iterator.next());
-        PackageElement packageElement = elementUtils.getPackageOf(classTypeElement);
-
+        Iterator<String> iterator;
         ClassInheritanceHelper helper;
         try {
             helper = ClassInheritanceHelper.getInstance(messager, elementUtils);
@@ -222,7 +216,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     }
 
     /**
-     * 去重 这里的去重有问题 因为AnnotatedMethod的比较是有问题的
+     * 去重
      */
     private void mergeMethod(List<AnnotatedMethod> toList, List<AnnotatedMethod> fromList) {
 
@@ -271,12 +265,20 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     }
 
     /**
-     * TODO
      * 写文件
      */
     private void writeLogsToJavaFile() {
+        JavaFileWriter.initMessager(messager);
+        for (String classNameString : mGroupedMethodsMap.keySet()) {
+            JavaFileWriter writer = new JavaFileWriter();
+            writer.open(classNameString).addImportIfneed();
 
+            for (AnnotatedMethod method : mGroupedMethodsMap.get(classNameString)) {
+                writer.writeLogToMethod(method);
+            }
 
+            writer.save();
+        }
     }
 
     public static void error(@NonNull Messager messager, @Nullable Element e, @NonNull String msg, @Nullable Object... args) {

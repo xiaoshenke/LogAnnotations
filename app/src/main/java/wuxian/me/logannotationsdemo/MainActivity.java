@@ -2,14 +2,15 @@ package wuxian.me.logannotationsdemo;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 
-import wuxian.me.logannotations.Log;
+import wuxian.me.logannotations.LOG;
 import wuxian.me.logannotations.NoLog;
 
 @NoLog
 public class MainActivity extends AppCompatActivity {
 
-    @Log
+    @LOG
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -17,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void testA() {
-        ;
+        Log.e("main", "testA");
     }
 
     protected void testB() {

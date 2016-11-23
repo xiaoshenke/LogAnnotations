@@ -10,11 +10,11 @@ import javax.lang.model.element.ExecutableElement;
 
 public interface IWriter {
 
-    IWriter open(File file);
+    IWriter open(String classNameString);
 
     IWriter addImportIfneed();
 
-    IWriter writeLogToMethod(ExecutableElement element);
+    IWriter writeLogToMethod(AnnotatedMethod method);
 
-    boolean write();
+    boolean save();
 }

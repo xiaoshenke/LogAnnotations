@@ -1,6 +1,6 @@
 package wuxian.me.logannotationsdemo;
 
-import wuxian.me.logannotations.Log;
+import wuxian.me.logannotations.LOG;
 
 /**
  * Created by wuxian on 23/11/2016.
@@ -8,12 +8,12 @@ import wuxian.me.logannotations.Log;
 
 public class SubA extends A {
 
-    @Log
+    @LOG
     private void call(String name, String xing) {
         ;
     }
 
-    @Log
+    @LOG
     public void call(String name) {
         ;
     }

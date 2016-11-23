@@ -1,6 +1,6 @@
 package wuxian.me.logannotationsdemo;
 
-import wuxian.me.logannotations.Log;
+import wuxian.me.logannotations.LOG;
 import wuxian.me.logannotations.NoLog;
 
 /**
@@ -10,7 +10,7 @@ import wuxian.me.logannotations.NoLog;
 @NoLog
 public class A extends BaseA {
 
-    @Log
+    @LOG
     protected void call() {
         ;
     }

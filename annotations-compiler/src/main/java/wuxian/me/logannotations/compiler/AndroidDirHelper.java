@@ -46,7 +46,26 @@ public class AndroidDirHelper {
         messager = msg;
     }
 
-    public static boolean initRootDir() throws ProcessingException {
+    /**
+     * 这里不做class名字校验 并且这里的classname长这样 your.package.name.classname
+     */
+    public static File getFileByClassName(String classNameString) throws ProcessingException {
+        int dot = classNameString.lastIndexOf(DOT);
+        if (dot == -1) {
+            return null;
+        }
+
+        String packageName = classNameString.substring(0, dot);
+        String className = classNameString.substring(dot + 1, classNameString.length());
+        String packageDir = findJavaDir(packageName).getAbsolutePath();
+        File file = new File(packageDir + "/" + transformNametoPath(packageName) + "/" + className + ".java");
+        if (file.exists()) {
+            return file;
+        }
+        return null;
+    }
+
+    private static boolean initRootDir() throws ProcessingException {
         if (null != rootDir) {
             return true;
         }
@@ -54,7 +73,7 @@ public class AndroidDirHelper {
         return true;
     }
 
-    public static File findJavaDir(String packageName) throws ProcessingException {
+    private static File findJavaDir(String packageName) throws ProcessingException {
         if (packageName == null || packageName.length() == 0) {
             throw new ProcessingException(null, "package name is null");
         }
@@ -83,24 +102,9 @@ public class AndroidDirHelper {
     }
 
     /**
-     * 这里不做class名字校验 并且这里的classname长这样 your.package.name.classname
+     * 读取android gradle工程的settings.gradle文件来获取所有android module
+     * @return
      */
-    public static File getFileByClassName(String classNameString) throws ProcessingException {
-        int dot = classNameString.lastIndexOf(DOT);
-        if (dot == -1) {
-            return null;
-        }
-
-        String packageName = classNameString.substring(0, dot);
-        String className = classNameString.substring(dot + 1, classNameString.length());
-        String packageDir = findJavaDir(packageName).getAbsolutePath();
-        File file = new File(packageDir + "/" + transformNametoPath(packageName) + "/" + className + ".java");
-        if (file.exists()) {
-            return file;
-        }
-        return null;
-    }
-
     private static boolean initModules() {
         modules = new ArrayList<>();
 

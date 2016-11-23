@@ -1,7 +1,6 @@
 package wuxian.me.logannotationsdemo;
 
-import wuxian.me.logannotations.Log;
-import wuxian.me.logannotations.NoLog;
+import wuxian.me.logannotations.LOG;
 
 /**
  * Created by wuxian on 23/11/2016.
@@ -10,12 +9,12 @@ import wuxian.me.logannotations.NoLog;
 
 public class BaseA {
 
-    @Log
+    @LOG
     protected void call() {
         ;
     }
 
-    @Log
+    @LOG
     protected void call(String name) {
         ;
     }

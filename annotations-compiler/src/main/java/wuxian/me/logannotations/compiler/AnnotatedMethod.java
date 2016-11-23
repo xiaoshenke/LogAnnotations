@@ -5,9 +5,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.lang.annotation.Annotation;
 
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
 
-import wuxian.me.logannotations.Log;
+import wuxian.me.logannotations.LOG;
 
 /**
  * Created by wuxian on 22/11/2016.
@@ -21,7 +20,7 @@ public class AnnotatedMethod {
                            @NonNull Class<? extends Annotation> annotationClass) throws IllegalArgumentException {
         Annotation annotation = methodElement.getAnnotation(annotationClass);
         this.element = methodElement;
-        this.level = ((Log) annotation).level();
+        this.level = ((LOG) annotation).level();
     }
 
     @NonNull
