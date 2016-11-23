@@ -3,8 +3,11 @@ package wuxian.me.logannotations.compiler;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import wuxian.me.logannotations.Log;
+
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,12 +28,9 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 
-import wuxian.me.logannotations.Log;
-
 /**
  * Created by wuxian on 22/11/2016.
  * <p>
- * TODO: to be finished
  */
 
 public class LogAnnotationsProcessor extends AbstractProcessor {
@@ -45,7 +45,8 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     private final @NonNull Map<String, List<AnnotatedMethod>> mGroupedMethodsMap =
             new LinkedHashMap<>();
 
-    private final List<List<String>> mClassInheritanceMap = new ArrayList<>();
+    //merge结果map class没有superclass的时候自动为true,否则为false,只有merge过才记为true
+    private final Map<String, Boolean> mMergedClassMap = new HashMap<>();
 
     @Override
     public synchronized void init(@NonNull ProcessingEnvironment env) {
@@ -70,7 +71,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         return true;
     }
 
-
     private void collectAnnotations(Class<? extends Annotation> annotationClass, @NonNull RoundEnvironment roundEnv) throws ProcessingException {
         Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(annotationClass);
         info(messager, null, "Processing %d elements annotated with @%s", elements.size(), elements);
@@ -90,7 +90,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             }
         }
     }
-
 
     private void processMethod(ExecutableElement executableElement, Class<? extends Annotation> annotationClass) throws ProcessingException {
         AnnotatedMethod annotatedMethod = new AnnotatedMethod(executableElement, annotationClass);
@@ -150,12 +149,10 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
                 break;
             }
         }
-
         return enclosingClass;
     }
 
     /**
-     * TODO
      * 子类自动继承所有父类的@Log annotation
      */
     private void dealClassInheritation() {
@@ -167,8 +164,52 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         TypeElement classTypeElement = elementUtils.getTypeElement(iterator.next());
         PackageElement packageElement = elementUtils.getPackageOf(classTypeElement);
 
-        //ClassInheritanceHelper helper = ClassInheritanceHelper.getInstance(elementUtils, packageElement);
+        ClassInheritanceHelper helper;
+        try {
+            helper = ClassInheritanceHelper.getInstance(messager, elementUtils, packageElement);
+        } catch (ProcessingException e) {
+            return;
+        }
 
+        iterator = classNames.iterator();  //重新赋值
+        while (iterator.hasNext()) {
+            String className = iterator.next();
+            if (mMergedClassMap.containsKey(className)) { //该结点已经被处理
+                continue;
+            }
+            recursiveDealClass(helper, className);
+        }
+    }
+
+    private void recursiveDealClass(ClassInheritanceHelper helper, String className) {
+        String superClass = helper.getSuperClass(className);
+        if (superClass == null) {                           //没有superclass 不需要merge过程
+            mMergedClassMap.put(className, true);
+            return;
+        }
+
+        if (!mGroupedMethodsMap.containsKey(superClass)) { //尽管该class有superclass 但该superclass没有被注解的函数 因此不需要merge过程
+            mMergedClassMap.put(className, true);
+            return;
+        }
+
+        if (!mMergedClassMap.containsKey(superClass)) { //父结点没有被处理 先处理父结点
+            recursiveDealClass(helper, superClass);
+        }
+
+        mergeMethod(mGroupedMethodsMap.get(superClass), mGroupedMethodsMap.get(className));
+        mMergedClassMap.put(className, true);
+
+    }
+
+    /**
+     * 去重？子annotated的标记比如public protectd,参数的不同会被认为是不同的method么？
+     * TODO: debug and test
+     */
+    private void mergeMethod(List<AnnotatedMethod> to, List<AnnotatedMethod> from) {
+        to.removeAll(from); //先去重
+        to.addAll(from);    //再合并
+        return;
     }
 
     /**
