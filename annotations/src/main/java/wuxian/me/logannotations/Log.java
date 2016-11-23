@@ -17,4 +17,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface LOG {
     int level() default -1;
+
+    int LEVEL_NO_LOG = -1;
+    int LEVEL_INFO = 0;
+    int LEVEL_DEBUG = 1;
+    int LEVEL_ERROR = 2;
 }

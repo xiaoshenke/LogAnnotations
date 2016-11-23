@@ -8,10 +8,15 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.processing.Messager;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
+
+import wuxian.me.logannotations.LOG;
 
 /**
  * Created by wuxian on 23/11/2016.
@@ -30,6 +35,7 @@ public class JavaFileWriter implements IWriter {
 
     private File file;
     private String classNameString;
+    private String className;
 
     private String origin;
     private String lastNormal;
@@ -60,6 +66,8 @@ public class JavaFileWriter implements IWriter {
         }
         this.file = file;
         this.classNameString = classNameString;
+        int dot = classNameString.lastIndexOf(".");
+        this.className = classNameString.substring(dot + 1, classNameString.length());
 
         StringBuilder builder = new StringBuilder("");
         BufferedReader reader = null;
@@ -108,11 +116,10 @@ public class JavaFileWriter implements IWriter {
         Pattern pattern = Pattern.compile("import\\s+android\\.util\\.Log;");
         Matcher matcher = pattern.matcher(origin);
 
-        int dot = classNameString.lastIndexOf(".");
-        String className = classNameString.substring(dot + 1, classNameString.length());
-
         if (!matcher.find()) { //没有import log,手动导入
-            Pattern pattern1 = Pattern.compile(String.format("package.*\\.%s;", className));
+            String regex = String.format("package[\\.\\s\\w]*;");
+            //LogAnnotationsProcessor.info(messager,null,String.format("regex: %s",regex));
+            Pattern pattern1 = Pattern.compile(regex);
             Matcher matcher1 = pattern1.matcher(lastNormal);
 
             if (!matcher1.find()) {
@@ -120,26 +127,106 @@ public class JavaFileWriter implements IWriter {
                 return this;
             }
 
-            int end = matcher1.end();//插入...
-            String before = lastNormal.substring(end);
-            String after = lastNormal.substring(end + 1, lastNormal.length());
+            int end = matcher1.end();//插入到package的后面
+            String before = lastNormal.substring(0, end);
+            String after = lastNormal.substring(end, lastNormal.length());
+            //LogAnnotationsProcessor.info(messager,null,String.format("end: %d ",end));
+            //LogAnnotationsProcessor.info(messager,null,String.format("before: %s",before));
+            //LogAnnotationsProcessor.info(messager,null,String.format("after: %s",after));
 
-            lastNormal = before + "\nimport android.util.Log;" + after;
-            current = new String(lastNormal); //...
+            lastNormal = before + "\n\nimport android.util.Log;" + after;
+            current = new String(lastNormal);
         }
 
         return this;
     }
 
-    //TODO: to be finished
+    private String getSimpleName(@NonNull String origin) {
+        int dot = origin.lastIndexOf(".");
+        if (dot == -1) {
+            return origin;
+        }
+
+        return origin.substring(dot + 1, origin.length());
+    }
+
+    //void main(A a,B b)
     @Override
     public IWriter writeLogToMethod(AnnotatedMethod method) {
+        LogAnnotationsProcessor.info(messager, null, String.format("write log ,state %d ,method %s", state, method.getExecutableElement().getSimpleName().toString()));
         if (state == STATE_ERROR) {
             return this;
         }
+
+        if (method.getLevel() == LOG.LEVEL_NO_LOG) {
+            return this;
+        }
+
+        ExecutableElement element = method.getExecutableElement();
+
+        String name = element.getSimpleName().toString();
+        String returnname = element.getReturnType().toString();
+
+        String regex = returnname + "\\s+" + name + "\\s*\\(\\s*";
+
+        List<? extends VariableElement> parameters = element.getParameters();
+        for (int i = 0; i < parameters.size(); i++) {
+            if (i == parameters.size() - 1) {
+                regex = regex + getSimpleName(parameters.get(i).asType().toString()) + "\\s+[\\w]+\\s*";
+            } else {
+                regex = regex + getSimpleName(parameters.get(i).asType().toString()) + "\\s+[\\w]+\\s*,\\s*";
+            }
+        }
+        regex = regex + "\\)\\s*\\{";
+
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(lastNormal);
+
+        if (matcher.find()) {
+            String before = lastNormal.substring(0, matcher.end());
+            String after = lastNormal.substring(matcher.end(), lastNormal.length());
+
+            //super.call(abcd);
+            Pattern pattern1 = Pattern.compile("\\s*super\\..+;"); //存在调用super函数的 插入到super函数的后面
+            Matcher matcher1 = pattern1.matcher(after);
+            if (matcher1.find() && matcher1.start() == 0) { //存在调用super 且不是其它函数的super
+                //重置before after
+                before = before + after.substring(0, matcher1.end());
+                after = after.substring(matcher1.end(), after.length());
+            }
+
+            Pattern pattern2 = Pattern.compile("\\s*(?=\\w)"); //找出第一行的回车键 tab建
+            Matcher matcher2 = pattern2.matcher(after);
+            if (!matcher2.find()) {
+                state = STATE_WRITING_ERROR;
+                return this;
+            }
+
+            String add = matcher2.group();
+            if (method.getLevel() == LOG.LEVEL_INFO) {
+                add = add + "Log.i(";
+            } else if (method.getLevel() == LOG.LEVEL_DEBUG) {
+                add = add + "Log.d(";
+            } else {
+                add = add + "Log.e(";
+            }
+
+            add = add + className + "," + "\"in func " + name + "\");";//Log.e(classname,func name);
+            lastNormal = before + add + after;
+
+            LogAnnotationsProcessor.info(messager, null, String.format("after addlog %s", lastNormal));
+            current = new String(lastNormal);
+
+        } else {
+            state = STATE_WRITING_ERROR; //有一个函数没有被匹配
+        }
+
         return this;
     }
 
+    /**
+     * TODO
+     */
     @Override
     public boolean save() {
         if (state == STATE_ERROR) {

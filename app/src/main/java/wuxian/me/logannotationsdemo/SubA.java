@@ -8,13 +8,13 @@ import wuxian.me.logannotations.LOG;
 
 public class SubA extends A {
 
-    @LOG
+    @LOG(level = 1)
     private void call(String name, String xing) {
         ;
     }
 
-    @LOG
+    @LOG(level = 1)
     public void call(String name) {
-        ;
+        super.call(name);
     }
 }
