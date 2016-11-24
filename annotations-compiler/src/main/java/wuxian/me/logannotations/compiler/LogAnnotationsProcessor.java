@@ -101,7 +101,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     private void mergeAnnotatedClassCollection() {
         for (TypeElement element : mLogAllList) {
             List<? extends Element> elements = element.getEnclosedElements();
-            info(messager, null, String.format("merge class:%s size:%s", element.getSimpleName(), elements.toString()));
 
             List<AnnotatedMethod> annotatedMethods = new ArrayList<>();
             int level = element.getAnnotation(LogAll.class).level();

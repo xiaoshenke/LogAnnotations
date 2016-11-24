@@ -17,8 +17,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
     }
 
+    @LOG
     protected void testA() {
-        Log.e("main", "testA");
+        ;
     }
 
     protected void testB() {

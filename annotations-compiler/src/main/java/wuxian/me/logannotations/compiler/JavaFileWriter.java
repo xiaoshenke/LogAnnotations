@@ -21,9 +21,6 @@ import wuxian.me.logannotations.LOG;
 
 /**
  * Created by wuxian on 23/11/2016.
- *
- * TODO:NoLog,LogAll annotation的处理
- *
  * 打开前和save后都为NO_STATE
  * 正常写为WRITING_NORMAL
  * 写某个方法出错时为WRITTING_ERROR WRITTING_ERROR的那个方法不写入 进行回滚
@@ -37,7 +34,7 @@ public class JavaFileWriter implements IWriter {
     private static final int STATE_WRITING_ERROR = 2;
     private static final int STATE_ERROR = -1;
 
-    private static final String POST_FIX = " ,powed by LOG Annotation";
+    private static final String POST_FIX = " ,powered by LOG Annotation";
 
     private File file;
     private String classNameString;
