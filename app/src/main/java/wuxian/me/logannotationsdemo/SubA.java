@@ -1,5 +1,8 @@
 package wuxian.me.logannotationsdemo;
 
+import android.util.Log;
+
+
 import wuxian.me.logannotations.LOG;
 
 /**
@@ -8,12 +11,11 @@ import wuxian.me.logannotations.LOG;
 
 public class SubA extends A {
 
-    @LOG(level = 1)
+    @LOG(level = LOG.LEVEL_DEBUG)
     private void call(String name, String xing) {
-        ;
     }
 
-    @LOG(level = 1)
+    @LOG(level = LOG.LEVEL_DEBUG)
     public void call(String name) {
         super.call(name);
     }

@@ -36,7 +36,7 @@ import javax.tools.Diagnostic;
  * <p>
  */
 
-@SupportedAnnotationTypes(value = {"wuxian.me.logannotations.LOG", "wuxian.me.logannotations.NoLog"})
+@SupportedAnnotationTypes(value = {"wuxian.me.logannotations.LOG"})
 public class LogAnnotationsProcessor extends AbstractProcessor {
     @NonNull
     private Elements elementUtils;
@@ -69,7 +69,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     @Override
     public boolean process(@NonNull Set<? extends TypeElement> set,
                            @NonNull RoundEnvironment roundEnv) {
-        info(messager, null, "begin to collect annotations");
+        info(messager, null, "begin to collect annotations"); //FIXME,called twice..
         try {
             collectAnnotations(LOG.class, roundEnv);
         } catch (ProcessingException e) {

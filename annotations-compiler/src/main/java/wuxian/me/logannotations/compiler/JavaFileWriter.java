@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -20,6 +21,9 @@ import wuxian.me.logannotations.LOG;
 
 /**
  * Created by wuxian on 23/11/2016.
+ *
+ * TODO:NoLog,LogAll annotation的处理
+ *
  * 打开前和save后都为NO_STATE
  * 正常写为WRITING_NORMAL
  * 写某个方法出错时为WRITTING_ERROR WRITTING_ERROR的那个方法不写入 进行回滚
@@ -101,7 +105,6 @@ public class JavaFileWriter implements IWriter {
             origin = builder.toString();
             lastNormal = new String(origin);
         }
-
         return this;
     }
 
@@ -142,19 +145,7 @@ public class JavaFileWriter implements IWriter {
         return origin.substring(dot + 1, origin.length());
     }
 
-    //void main(A a,B b)
-    @Override
-    public IWriter writeLogToMethod(AnnotatedMethod method) {
-        if (state == STATE_ERROR) {
-            return this;
-        }
-
-        if (method.getLevel() == LOG.LEVEL_NO_LOG) {
-            return this;
-        }
-
-        ExecutableElement element = method.getExecutableElement();
-
+    private String getFindMethodRegex(@NonNull ExecutableElement element) {
         String name = element.getSimpleName().toString();
         String returnname = element.getReturnType().toString();
 
@@ -169,21 +160,74 @@ public class JavaFileWriter implements IWriter {
             }
         }
         regex = regex + "\\)\\s*\\{"; //regex --> void main(){
+        return regex;
+    }
 
-        Pattern pattern = Pattern.compile(regex);
+    private boolean hasLogAllready(@NonNull String content) {
+        int superPos = getSuperFuncPosition(content);
+        if (superPos != -1) {
+            content = content.substring(superPos, content.length());
+        }
+
+        Pattern pattern = Pattern.compile(String.format("\\s*Log[.,\\s\"\\w\\(]+,powed\\s+by\\s+annotation")); //powed by annotation作为标记
+        Matcher matcher = pattern.matcher(content);
+        if (matcher.find() && matcher.start() == 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private String getLogSentence(@NonNull AnnotatedMethod method) {
+        String log = "";
+        if (method.getLevel() == LOG.LEVEL_INFO) {
+            log = log + "Log.i(";
+        } else if (method.getLevel() == LOG.LEVEL_DEBUG) {
+            log = log + "Log.d(";
+        } else {
+            log = log + "Log.e(";
+        }
+
+        //add --> Log.e(classname,func name);
+        log = log + "\"" + className + "\"" + "," + "\"in func " + method.getExecutableElement().getSimpleName().toString() + " ,powed by annotation\");";
+        return log;
+    }
+
+    /**
+     * 有些函数 比如说onCreate() 必须调用一下super.onCreate();然后才能添加log 否则报错
+     *
+     * @return -1：没有super 否则返回super.xxx();的;的+1位置
+     */
+    private int getSuperFuncPosition(String content) {
+        Pattern pattern = Pattern.compile("\\s*super\\.[,_\\w\\(\\)\\s]+;"); //存在调用super函数的 插入到super函数的后面
+        Matcher matcher = pattern.matcher(content);
+
+        if (matcher.find() && matcher.start() == 0) { //存在调用super 且不是其它函数的super
+            return matcher.end();
+        }
+        return -1;
+    }
+
+    //void main(A a,B b)
+    @Override
+    public IWriter writeLogToMethod(AnnotatedMethod method) {
+        if (state == STATE_ERROR) {
+            return this;
+        }
+        if (method.getLevel() == LOG.LEVEL_NO_LOG) {
+            return this;
+        }
+
+        ExecutableElement element = method.getExecutableElement();
+        Pattern pattern = Pattern.compile(getFindMethodRegex(element));
         Matcher matcher = pattern.matcher(lastNormal);
 
-        if (matcher.find()) {
+        if (matcher.find()) { //找到element对应的method
             String before = lastNormal.substring(0, matcher.end());
             String after = lastNormal.substring(matcher.end(), lastNormal.length());
 
-            //regex --> super.call(abcd);
-            Pattern pattern1 = Pattern.compile("\\s*super\\.[,_\\w\\(\\)\\s]+;"); //存在调用super函数的 插入到super函数的后面
-            Matcher matcher1 = pattern1.matcher(after);
-
-            boolean hasSuper = false;
-            if (matcher1.find() && matcher1.start() == 0) { //存在调用super 且不是其它函数的super
-                hasSuper = true;
+            if (hasLogAllready(after)) {
+                return this; //don't need to change state
             }
 
             Pattern pattern2 = Pattern.compile("\\s*(?=[\\w\\s;}])"); //regex --> 找出第一行的回车键 tab建
@@ -194,35 +238,52 @@ public class JavaFileWriter implements IWriter {
             }
 
             String add = matcher2.group();
-            if (method.getLevel() == LOG.LEVEL_INFO) {
-                add = add + "Log.i(";
-            } else if (method.getLevel() == LOG.LEVEL_DEBUG) {
-                add = add + "Log.d(";
-            } else {
-                add = add + "Log.e(";
-            }
+            add = add + getLogSentence(method);//add --> Log.e(classname,func name);
 
-            add = add + className + "," + "\"in func " + name + "\");";//add --> Log.e(classname,func name);
-
-            if (hasSuper) {
-                before = before + after.substring(0, matcher1.end());  //重置before after
-                after = after.substring(matcher1.end(), after.length());
+            int end = getSuperFuncPosition(after);
+            if (end != -1) {
+                before = before + after.substring(0, end);  //重置before after
+                after = after.substring(end, after.length());
             }
             lastNormal = before + add + after;
         } else {
             state = STATE_WRITING_ERROR; //有一个函数没有被匹配
         }
-
         return this;
     }
 
-    /**
-     * TODO
-     */
+
+    private boolean saveFile(String content) {
+        FileOutputStream fop = null;
+        try {
+            fop = new FileOutputStream(file);
+            byte[] bytes = lastNormal.getBytes();
+            fop.write(bytes);
+            fop.flush();
+
+        } catch (FileNotFoundException e) {
+            return false;
+        } catch (IOException e) {
+            return false;
+        } finally {
+            try {
+                fop.close();
+            } catch (IOException e) {
+                return false;
+            }
+
+        }
+        return true;
+    }
+
     @Override
     public boolean save() {
         if (state == STATE_ERROR) {
             return false;
+        }
+
+        if (!saveFile(lastNormal)) {
+            return saveFile(origin);
         }
 
         return true;

@@ -1,8 +1,5 @@
 package wuxian.me.logannotations.compiler;
 
-import java.io.File;
-
-import javax.lang.model.element.ExecutableElement;
 
 /**
  * Created by wuxian on 23/11/2016.
