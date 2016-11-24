@@ -39,7 +39,6 @@ public class JavaFileWriter implements IWriter {
 
     private String origin;
     private String lastNormal;
-    private String current;
 
     private int state = STATE_NO_STATE;
     private static Messager messager;
@@ -76,7 +75,7 @@ public class JavaFileWriter implements IWriter {
                     new FileInputStream(file.getAbsolutePath())));
             String line;
             while ((line = reader.readLine()) != null) {
-                builder.append(line);
+                builder.append(line + "\n"); //手动加上\n
             }
             state = STATE_WRITING_NORMAL;
         } catch (FileNotFoundException e) {
@@ -101,7 +100,6 @@ public class JavaFileWriter implements IWriter {
         if (state == STATE_WRITING_NORMAL) {
             origin = builder.toString();
             lastNormal = new String(origin);
-            current = new String(lastNormal);
         }
 
         return this;
@@ -112,13 +110,11 @@ public class JavaFileWriter implements IWriter {
         if (state == STATE_ERROR) {
             return this;
         }
-
         Pattern pattern = Pattern.compile("import\\s+android\\.util\\.Log;");
         Matcher matcher = pattern.matcher(origin);
 
         if (!matcher.find()) { //没有import log,手动导入
             String regex = String.format("package[\\.\\s\\w]*;");
-            //LogAnnotationsProcessor.info(messager,null,String.format("regex: %s",regex));
             Pattern pattern1 = Pattern.compile(regex);
             Matcher matcher1 = pattern1.matcher(lastNormal);
 
@@ -130,12 +126,8 @@ public class JavaFileWriter implements IWriter {
             int end = matcher1.end();//插入到package的后面
             String before = lastNormal.substring(0, end);
             String after = lastNormal.substring(end, lastNormal.length());
-            //LogAnnotationsProcessor.info(messager,null,String.format("end: %d ",end));
-            //LogAnnotationsProcessor.info(messager,null,String.format("before: %s",before));
-            //LogAnnotationsProcessor.info(messager,null,String.format("after: %s",after));
 
             lastNormal = before + "\n\nimport android.util.Log;" + after;
-            current = new String(lastNormal);
         }
 
         return this;
@@ -153,7 +145,6 @@ public class JavaFileWriter implements IWriter {
     //void main(A a,B b)
     @Override
     public IWriter writeLogToMethod(AnnotatedMethod method) {
-        LogAnnotationsProcessor.info(messager, null, String.format("write log ,state %d ,method %s", state, method.getExecutableElement().getSimpleName().toString()));
         if (state == STATE_ERROR) {
             return this;
         }
@@ -177,7 +168,7 @@ public class JavaFileWriter implements IWriter {
                 regex = regex + getSimpleName(parameters.get(i).asType().toString()) + "\\s+[\\w]+\\s*,\\s*";
             }
         }
-        regex = regex + "\\)\\s*\\{";
+        regex = regex + "\\)\\s*\\{"; //regex --> void main(){
 
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(lastNormal);
@@ -186,18 +177,18 @@ public class JavaFileWriter implements IWriter {
             String before = lastNormal.substring(0, matcher.end());
             String after = lastNormal.substring(matcher.end(), lastNormal.length());
 
-            //super.call(abcd);
-            Pattern pattern1 = Pattern.compile("\\s*super\\..+;"); //存在调用super函数的 插入到super函数的后面
+            //regex --> super.call(abcd);
+            Pattern pattern1 = Pattern.compile("\\s*super\\.[,_\\w\\(\\)\\s]+;"); //存在调用super函数的 插入到super函数的后面
             Matcher matcher1 = pattern1.matcher(after);
+
+            boolean hasSuper = false;
             if (matcher1.find() && matcher1.start() == 0) { //存在调用super 且不是其它函数的super
-                //重置before after
-                before = before + after.substring(0, matcher1.end());
-                after = after.substring(matcher1.end(), after.length());
+                hasSuper = true;
             }
 
-            Pattern pattern2 = Pattern.compile("\\s*(?=\\w)"); //找出第一行的回车键 tab建
+            Pattern pattern2 = Pattern.compile("\\s*(?=[\\w\\s;}])"); //regex --> 找出第一行的回车键 tab建
             Matcher matcher2 = pattern2.matcher(after);
-            if (!matcher2.find()) {
+            if (!matcher2.find() || matcher2.start() != 0) {
                 state = STATE_WRITING_ERROR;
                 return this;
             }
@@ -211,12 +202,13 @@ public class JavaFileWriter implements IWriter {
                 add = add + "Log.e(";
             }
 
-            add = add + className + "," + "\"in func " + name + "\");";//Log.e(classname,func name);
+            add = add + className + "," + "\"in func " + name + "\");";//add --> Log.e(classname,func name);
+
+            if (hasSuper) {
+                before = before + after.substring(0, matcher1.end());  //重置before after
+                after = after.substring(matcher1.end(), after.length());
+            }
             lastNormal = before + add + after;
-
-            LogAnnotationsProcessor.info(messager, null, String.format("after addlog %s", lastNormal));
-            current = new String(lastNormal);
-
         } else {
             state = STATE_WRITING_ERROR; //有一个函数没有被匹配
         }
