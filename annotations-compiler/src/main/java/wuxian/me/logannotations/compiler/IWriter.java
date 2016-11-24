@@ -7,6 +7,8 @@ package wuxian.me.logannotations.compiler;
 
 public interface IWriter {
 
+    IWriter clearAllLog();
+
     IWriter open(String classNameString);
 
     IWriter addImportIfneed();

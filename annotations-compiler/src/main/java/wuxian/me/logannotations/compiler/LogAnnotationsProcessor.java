@@ -4,12 +4,14 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import wuxian.me.logannotations.LOG;
+import wuxian.me.logannotations.LogAll;
 import wuxian.me.logannotations.NoLog;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,6 +60,12 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     //包括被NoLog注解的class
     private final Map<String, List<AnnotatedMethod>> mAllMethodsMap = new LinkedHashMap<>();
 
+    //被@NoLog注解的类
+    private final Set<TypeElement> mNoLogList = new HashSet<>();
+
+    //被@LogAll注解的类
+    private final Set<TypeElement> mLogAllList = new HashSet<>();
+
     @Override
     public synchronized void init(@NonNull ProcessingEnvironment env) {
         super.init(env);
@@ -69,18 +77,67 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     @Override
     public boolean process(@NonNull Set<? extends TypeElement> set,
                            @NonNull RoundEnvironment roundEnv) {
-        info(messager, null, "begin to collect annotations"); //FIXME,called twice..
+
         try {
+            processNoLogAnnotations(roundEnv);  //collect NoLog class
+
+            processLogAllAnnotations(roundEnv); //collect LogAll class
+
             collectAnnotations(LOG.class, roundEnv);
         } catch (ProcessingException e) {
             error(messager, e.getElement(), e.getMessage());
         }
-        info(messager, null, "begin to deal class inheritance");
+
+        mergeAnnotatedClassCollection();
+
         dealClassInheritance();
 
-        info(messager, null, "begin to save log");
         writeLogsToJavaFile();
+
         return true;
+    }
+
+    //TODO: merge mGroupMethodsMap,mNoLogList,mLogAllList...
+    private void mergeAnnotatedClassCollection() {
+        ;
+    }
+
+    private void processLogAllAnnotations(@NonNull RoundEnvironment roundEnv) throws ProcessingException {
+        Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(LogAll.class);
+        for (Element element : elements) {
+            if (element.getKind() != ElementKind.CLASS) {
+                throw new ProcessingException(element,
+                        String.format("Only class can be annotated with @%s",
+                                LogAll.class.getSimpleName()));
+            } else {
+                if (element.getAnnotation(NoLog.class) != null) {
+                    throw new ProcessingException(element,
+                            String.format("class can't be annotated with both @%s and @%s",
+                                    NoLog.class.getSimpleName(), LogAll.class.getSimpleName()));
+                }
+
+                mLogAllList.add((TypeElement) element);
+            }
+        }
+    }
+
+    private void processNoLogAnnotations(@NonNull RoundEnvironment roundEnv) throws ProcessingException {
+        Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(NoLog.class);
+        for (Element element : elements) {
+            if (element.getKind() != ElementKind.CLASS) {
+                throw new ProcessingException(element,
+                        String.format("Only class can be annotated with @%s",
+                                NoLog.class.getSimpleName()));
+            } else {
+                if (element.getAnnotation(LogAll.class) != null) {
+                    throw new ProcessingException(element,
+                            String.format("class can't be annotated with both @%s and @%s",
+                                    NoLog.class.getSimpleName(), LogAll.class.getSimpleName()));
+                }
+                mNoLogList.add((TypeElement) element);
+            }
+        }
+
     }
 
     private void collectAnnotations(Class<? extends Annotation> annotationClass, @NonNull RoundEnvironment roundEnv) throws ProcessingException {
@@ -269,6 +326,13 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
      */
     private void writeLogsToJavaFile() {
         JavaFileWriter.initMessager(messager);
+
+        for (TypeElement element : mNoLogList) {
+            String classNameString = element.getQualifiedName().toString();
+            JavaFileWriter writer = new JavaFileWriter();
+            writer.open(classNameString).clearAllLog().save();
+        }
+
         for (String classNameString : mGroupedMethodsMap.keySet()) {
             JavaFileWriter writer = new JavaFileWriter();
             writer.open(classNameString).addImportIfneed();

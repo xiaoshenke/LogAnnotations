@@ -37,6 +37,8 @@ public class JavaFileWriter implements IWriter {
     private static final int STATE_WRITING_ERROR = 2;
     private static final int STATE_ERROR = -1;
 
+    private static final String POST_FIX = " ,powed by LOG Annotation";
+
     private File file;
     private String classNameString;
     private String className;
@@ -56,6 +58,17 @@ public class JavaFileWriter implements IWriter {
 
     public JavaFileWriter() {
         ;
+    }
+
+    /**
+     * 被@NoLog注解 清空该文件下所有log
+     */
+    @Override
+    public IWriter clearAllLog() {
+        Pattern pattern = Pattern.compile(String.format("\\s*Log[.,\\s\"\\w\\(]+%s\"\\);", POST_FIX));
+        Matcher matcher = pattern.matcher(lastNormal);
+        lastNormal = matcher.replaceAll("");
+        return this;
     }
 
     @Override
@@ -169,7 +182,7 @@ public class JavaFileWriter implements IWriter {
             content = content.substring(superPos, content.length());
         }
 
-        Pattern pattern = Pattern.compile(String.format("\\s*Log[.,\\s\"\\w\\(]+,powed\\s+by\\s+annotation")); //powed by annotation作为标记
+        Pattern pattern = Pattern.compile(String.format("\\s*Log[.,\\s\"\\w\\(]+%s", POST_FIX)); //powed by annotation作为标记
         Matcher matcher = pattern.matcher(content);
         if (matcher.find() && matcher.start() == 0) {
             return true;
@@ -189,7 +202,7 @@ public class JavaFileWriter implements IWriter {
         }
 
         //add --> Log.e(classname,func name);
-        log = log + "\"" + className + "\"" + "," + "\"in func " + method.getExecutableElement().getSimpleName().toString() + " ,powed by annotation\");";
+        log = log + "\"" + className + "\"" + "," + "\"in func " + method.getExecutableElement().getSimpleName().toString() + POST_FIX + "\");";
         return log;
     }
 

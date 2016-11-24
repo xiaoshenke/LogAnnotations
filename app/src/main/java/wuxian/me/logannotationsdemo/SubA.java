@@ -4,11 +4,13 @@ import android.util.Log;
 
 
 import wuxian.me.logannotations.LOG;
+import wuxian.me.logannotations.NoLog;
 
 /**
  * Created by wuxian on 23/11/2016.
  */
 
+@NoLog
 public class SubA extends A {
 
     @LOG(level = LOG.LEVEL_DEBUG)
