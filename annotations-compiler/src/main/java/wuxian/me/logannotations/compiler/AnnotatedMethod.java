@@ -16,6 +16,11 @@ public class AnnotatedMethod {
     private ExecutableElement element;
     private int level = -1;
 
+    public AnnotatedMethod(@NonNull ExecutableElement methodElement, @NonNull int level) {
+        this.element = methodElement;
+        this.level = level;
+    }
+
     public AnnotatedMethod(@NonNull ExecutableElement methodElement,
                            @NonNull Class<? extends Annotation> annotationClass) throws IllegalArgumentException {
         Annotation annotation = methodElement.getAnnotation(annotationClass);

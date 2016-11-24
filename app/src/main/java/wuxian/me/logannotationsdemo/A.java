@@ -14,4 +14,7 @@ public class A extends BaseA {
     protected void call() {
         ;
     }
+
+    protected void callA() {
+    }
 }

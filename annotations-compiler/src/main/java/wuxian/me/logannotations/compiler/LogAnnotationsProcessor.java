@@ -97,9 +97,33 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         return true;
     }
 
-    //TODO: merge mGroupMethodsMap,mNoLogList,mLogAllList...
+    //merge mGroupMethodsMap,mLogAllList
     private void mergeAnnotatedClassCollection() {
-        ;
+        for (TypeElement element : mLogAllList) {
+            List<? extends Element> elements = element.getEnclosedElements();
+            info(messager, null, String.format("merge class:%s size:%s", element.getSimpleName(), elements.toString()));
+
+            List<AnnotatedMethod> annotatedMethods = new ArrayList<>();
+            int level = element.getAnnotation(LogAll.class).level();
+
+            for (Element ele : elements) { //收集element下的所有method
+                if (ele.getKind() != ElementKind.METHOD) {
+                    continue;
+                }
+                AnnotatedMethod annotatedMethod = new AnnotatedMethod((ExecutableElement) ele, level);
+                if (annotatedMethods.contains(annotatedMethod)) {
+                    continue;
+                }
+                annotatedMethods.add(annotatedMethod);
+            }
+            String className = element.getQualifiedName().toString();
+
+            if (mGroupedMethodsMap.keySet().contains(className)) {  //有则合并 否则加入
+                mergeMethod(mGroupedMethodsMap.get(className), annotatedMethods);
+            } else {
+                mGroupedMethodsMap.put(className, annotatedMethods);
+            }
+        }
     }
 
     private void processLogAllAnnotations(@NonNull RoundEnvironment roundEnv) throws ProcessingException {
