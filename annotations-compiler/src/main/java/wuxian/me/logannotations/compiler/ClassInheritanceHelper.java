@@ -15,9 +15,7 @@ import javax.annotation.processing.Messager;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 
-import static wuxian.me.logannotations.compiler.JavaFileHelper.getShortClassName;
 import static wuxian.me.logannotations.compiler.JavaFileHelper.readClassInfo;
-import static wuxian.me.logannotations.compiler.JavaFileHelper.getShortSuperClass;
 import static wuxian.me.logannotations.compiler.JavaFileHelper.getLongClassName;
 import static wuxian.me.logannotations.compiler.JavaFileHelper.getLongSuperClass;
 
@@ -65,7 +63,6 @@ public class ClassInheritanceHelper {
             return;
         }
         dumpOnce = true;
-
         if (!javaRoot.isDirectory()) {
             throw new ProcessingException(null, "java root is not directory!");
         }
@@ -98,6 +95,7 @@ public class ClassInheritanceHelper {
     }
 
     private void recursiveDealFile(@NonNull File dir) {
+        //LogAnnotationsProcessor.info(messager,null,String.format("recursive dir: %s",dir.getAbsolutePath()));
         if (!checkDir(dir)) {
             return;
         }
@@ -119,18 +117,21 @@ public class ClassInheritanceHelper {
 
     /**
      * 读取java文件 拿到继承关系
-     *
-     * @param file
      */
     private void getClassHeritance(File file) {
-        String classInfo = readClassInfo(file);
+        //LogAnnotationsProcessor.info(messager,null,String.format("get heritance file: %s",file.getAbsolutePath()));
 
+        String classInfo = readClassInfo(file);
         if (null == classInfo) {
             return;
         }
 
         String wholeClass = getLongClassName(classInfo);  //xxx.xxx.xxx.class
+        //LogAnnotationsProcessor.info(messager,null,String.format("get class: %s",wholeClass));
         String wholeSuperClass = getLongSuperClass(classInfo); //xxx.xxx.xxx.superclass
+        //LogAnnotationsProcessor.info(messager,null,String.format("get super class: %s",wholeSuperClass));
+
+        //LogAnnotationsProcessor.info(messager,null,String.format("class:%s superclass:%s",wholeClass,wholeSuperClass));
 
         if (wholeClass == null || wholeSuperClass == null) {
             return;

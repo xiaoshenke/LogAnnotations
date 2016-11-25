@@ -13,6 +13,8 @@ import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.processing.Messager;
+
 /**
  * Created by wuxian on 25/11/2016.
  * <p>
@@ -20,6 +22,13 @@ import java.util.regex.Pattern;
  */
 
 public class JavaFileHelper {
+
+    private static Messager messager;
+
+    public static void setMessager(@NonNull Messager msg) {
+        messager = msg;
+    }
+
     private JavaFileHelper() {
         throw new NoSuchElementException("no instance");
     }
@@ -80,7 +89,7 @@ public class JavaFileHelper {
         String superPackage = packageName; //默认在该包下
 
         if (hasAllreadyImport(className, classInfo)) { //存在import 说明在其它package下
-            Pattern pattern3 = Pattern.compile(String.format("(?<=import)\\s+[\\s.\\w]+(?=.%s\\s*;)", classInfo));
+            Pattern pattern3 = Pattern.compile(String.format("(?<=import)\\s+[\\s.\\w]+(?=.%s\\s*;)", className));
             Matcher matcher2 = pattern3.matcher(classInfo);
             if (matcher2.find()) {
                 superPackage = matcher2.group().trim();
@@ -110,7 +119,7 @@ public class JavaFileHelper {
      */
     @Nullable
     public static String readClassInfo(@NonNull File file) {
-        Pattern pattern = Pattern.compile(String.format("class\\s+[_\\w]\\s+extends\\s+[\\w]+.*\\{"));
+        Pattern pattern = Pattern.compile(String.format("class\\s+[_\\w]+\\s+extends\\s+[_\\w\\s]+\\{"));
 
         StringBuilder builder = new StringBuilder("");
         BufferedReader reader = null;
@@ -158,15 +167,23 @@ public class JavaFileHelper {
             return null;  //fail to find super class
         }
 
+        /*
+        LogAnnotationsProcessor.info(messager,null,String.format("find:%b content:%s",find,builder.toString()));
+
         Matcher classInfoMatcher = pattern.matcher(builder.toString());
 
-        int end = classInfoMatcher.end();
-        String sub = builder.toString().substring(0, end);
+        if(!classInfoMatcher.find()){
+            LogAnnotationsProcessor.error(messager,null,"find classinfo error");
+        }
+        int start = classInfoMatcher.start();
+
+        String sub = builder.toString().substring(0, start);
         Pattern bracketPattern = Pattern.compile("\\{");
         Matcher bracketMatcher = bracketPattern.matcher(sub);
         if (bracketMatcher.find()) {
             return null;  //目前不支持inner class
         }
+        */
 
         return builder.toString();
     }

@@ -82,21 +82,29 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     @Override
     public boolean process(@NonNull Set<? extends TypeElement> set,
                            @NonNull RoundEnvironment roundEnv) {
+        JavaFileHelper.setMessager(messager);
         try {
+            info(messager, null, "init helper");
             helper = ClassInheritanceHelper.getInstance(messager, elementUtils);
 
+            info(messager, null, "before process nolog");
             processNoLogAnnotations(roundEnv);  //collect NoLog class
 
+            info(messager, null, "before process logall");
             processLogAllAnnotations(roundEnv); //collect LogAll class
 
+            info(messager, null, "before collect annotations");
             collectAnnotations(LOG.class, roundEnv);
 
+            info(messager, null, "before merge annotationclass");
             mergeAnnotatedClassCollection();
 
+            info(messager, null, "before dump class");
             if (mGroupedMethodsMap.size() != 0) {
                 Iterator<String> iterator = mGroupedMethodsMap.keySet().iterator();
                 String className = iterator.next();
                 File javaRoot = AndroidDirHelper.getJavaRoot(className);
+                info(messager, null, String.format("javaRoot: %s", javaRoot.getAbsolutePath()));
                 helper.dumpAllClassesOnce(javaRoot);
 
             } else if (mNoLogList.size() != 0) {
@@ -110,12 +118,13 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             error(messager, e.getElement(), e.getMessage());
         }
 
-
-
+        info(messager, null, "before deal inheritance");
         dealClassInheritance();
 
+        info(messager, null, "before clear log");
         clearLogByNoLogList();
 
+        info(messager, null, "before write log");
         writeLogsToJavaFile();
 
         return true;
