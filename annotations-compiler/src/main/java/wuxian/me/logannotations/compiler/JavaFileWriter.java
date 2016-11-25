@@ -59,12 +59,18 @@ public class JavaFileWriter implements IWriter {
 
     /**
      * 被@NoLog注解 清空该文件下所有log
+     * 对于@NoLog注解的子类 与@NoLog注解的类处理并无不同,反正被@NoLog注解的子类@LOG注解会被重新加入
      */
     @Override
     public IWriter clearAllLog() {
+        if (state == STATE_ERROR) {
+            return this;
+        }
+
         Pattern pattern = Pattern.compile(String.format("\\s*Log[.,\\s\"\\w\\(]+%s\"\\);", POST_FIX));
         Matcher matcher = pattern.matcher(lastNormal);
         lastNormal = matcher.replaceAll("");
+
         return this;
     }
 

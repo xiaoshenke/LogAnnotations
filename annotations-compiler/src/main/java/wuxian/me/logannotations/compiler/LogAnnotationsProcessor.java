@@ -47,6 +47,8 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     @NonNull
     private Messager messager;
 
+    ClassInheritanceHelper helper;
+
     //Map<classname,list<method>>
     //不含被NoLog注解的class
     private final @NonNull Map<String, List<AnnotatedMethod>> mGroupedMethodsMap =
@@ -63,6 +65,9 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     //被@NoLog注解的类
     private final Set<TypeElement> mNoLogList = new HashSet<>();
 
+    //NoLog具有继承属性 因此清除log的时候 应对它的子类也进行log清除动作
+    private final Set<TypeElement> mClearLogList = new HashSet<>();
+
     //被@LogAll注解的类
     private final Set<TypeElement> mLogAllList = new HashSet<>();
 
@@ -77,8 +82,9 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     @Override
     public boolean process(@NonNull Set<? extends TypeElement> set,
                            @NonNull RoundEnvironment roundEnv) {
-
         try {
+            helper = ClassInheritanceHelper.getInstance(messager, elementUtils);
+
             processNoLogAnnotations(roundEnv);  //collect NoLog class
 
             processLogAllAnnotations(roundEnv); //collect LogAll class
@@ -91,6 +97,8 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         mergeAnnotatedClassCollection();
 
         dealClassInheritance();
+
+        clearLogByNoLogList();
 
         writeLogsToJavaFile();
 
@@ -255,12 +263,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     private void dealClassInheritance() {
         Set<String> classNames = mGroupedMethodsMap.keySet();
         Iterator<String> iterator;
-        ClassInheritanceHelper helper;
-        try {
-            helper = ClassInheritanceHelper.getInstance(messager, elementUtils);
-        } catch (ProcessingException e) {
-            return;
-        }
 
         iterator = classNames.iterator();  //重新赋值
         while (iterator.hasNext()) {
@@ -344,17 +346,41 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         return true;
     }
 
+    //因为LogAll具有继承属性 所以NoLog也应该具有继承属性 必须清理子类中由于LogAll产生的log
+    private void clearLogByNoLogList() {
+        JavaFileWriter.initMessager(messager);
+
+        for (TypeElement element : mNoLogList) {
+            if (mClearLogList.contains(element)) {
+                continue;
+            }
+            recursiveClearLog(element);
+        }
+
+    }
+
+    private void recursiveClearLog(@NonNull TypeElement element) {
+
+        String classNameString = element.getQualifiedName().toString();
+
+        JavaFileWriter writer = new JavaFileWriter();
+        writer.open(classNameString).clearAllLog().save();
+        mClearLogList.add(element);
+
+        String superClass = helper.getSuperClass(classNameString);
+        if (superClass != null) {
+            TypeElement typeElement = elementUtils.getTypeElement(superClass);
+            if (typeElement != null) {
+                recursiveClearLog(typeElement); //继续处理super类的log
+            }
+        }
+
+    }
+
     /**
      * 写文件
      */
     private void writeLogsToJavaFile() {
-        JavaFileWriter.initMessager(messager);
-
-        for (TypeElement element : mNoLogList) {
-            String classNameString = element.getQualifiedName().toString();
-            JavaFileWriter writer = new JavaFileWriter();
-            writer.open(classNameString).clearAllLog().save();
-        }
 
         for (String classNameString : mGroupedMethodsMap.keySet()) {
             JavaFileWriter writer = new JavaFileWriter();

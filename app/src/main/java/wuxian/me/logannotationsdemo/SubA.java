@@ -15,13 +15,13 @@ import wuxian.me.logannotations.NoLog;
 public class SubA extends A {
 
     private void call(String name, String xing) {
-        Log.i("SubA", "in func call ,powed by LOG Annotation");
+        Log.i("SubA", "in func call ,powered by LOG Annotation");
         ;
     }
 
     @LOG(level = LOG.LEVEL_DEBUG)
     public void call(String name) {
         super.call(name);
-        Log.d("SubA", "in func call ,powed by LOG Annotation");
+        Log.d("SubA", "in func call ,powered by LOG Annotation");
     }
 }
