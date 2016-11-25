@@ -65,6 +65,17 @@ public class AndroidDirHelper {
         return null;
     }
 
+    public static File getJavaRoot(String classNameString) throws ProcessingException {
+        int dot = classNameString.lastIndexOf(DOT);
+        if (dot == -1) {
+            return null;
+        }
+
+        String packageName = classNameString.substring(0, dot);
+        String className = classNameString.substring(dot + 1, classNameString.length());
+        return findJavaDir(packageName);
+    }
+
     private static boolean initRootDir() throws ProcessingException {
         if (null != rootDir) {
             return true;

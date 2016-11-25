@@ -90,11 +90,27 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             processLogAllAnnotations(roundEnv); //collect LogAll class
 
             collectAnnotations(LOG.class, roundEnv);
+
+            mergeAnnotatedClassCollection();
+
+            if (mGroupedMethodsMap.size() != 0) {
+                Iterator<String> iterator = mGroupedMethodsMap.keySet().iterator();
+                String className = iterator.next();
+                File javaRoot = AndroidDirHelper.getJavaRoot(className);
+                helper.dumpAllClassesOnce(javaRoot);
+
+            } else if (mNoLogList.size() != 0) {
+                Iterator<TypeElement> iterator = mNoLogList.iterator();
+                String className = iterator.next().getQualifiedName().toString();
+                File javaRoot = AndroidDirHelper.getJavaRoot(className);
+                helper.dumpAllClassesOnce(javaRoot);
+            }
+
         } catch (ProcessingException e) {
             error(messager, e.getElement(), e.getMessage());
         }
 
-        mergeAnnotatedClassCollection();
+
 
         dealClassInheritance();
 
@@ -356,25 +372,25 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             }
             recursiveClearLog(element);
         }
-
     }
 
+    //递归删除log
     private void recursiveClearLog(@NonNull TypeElement element) {
-
+        if (mClearLogList.contains(element)) {
+            return;
+        }
         String classNameString = element.getQualifiedName().toString();
-
         JavaFileWriter writer = new JavaFileWriter();
         writer.open(classNameString).clearAllLog().save();
         mClearLogList.add(element);
 
-        String superClass = helper.getSuperClass(classNameString);
-        if (superClass != null) {
-            TypeElement typeElement = elementUtils.getTypeElement(superClass);
-            if (typeElement != null) {
-                recursiveClearLog(typeElement); //继续处理super类的log
+        List<String> subClasses = helper.getSubClasses(classNameString);
+        for (String sub : subClasses) {
+            TypeElement typeElement = elementUtils.getTypeElement(sub);
+            if (sub != null) {
+                recursiveClearLog(typeElement);
             }
         }
-
     }
 
     /**
