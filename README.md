@@ -47,7 +47,12 @@ Opposite to @NoLog,@LogAll will annotate every method in the annotated class.Log
 public class SubA extends A
 ```
 
-If the method under the @LogAll annotated class is also annotated in @LOG with different level,we will use @LOG level.                       
+If the method under the @LogAll annotated class is also annotated in @LOG with different level,we will use @LOG level.   
+
+### TODO
+* support inner-class
+* support interface
+* pass enough tests                   
 
 check the code to know more details!
 
