@@ -167,24 +167,6 @@ public class JavaFileHelper {
             return null;  //fail to find super class
         }
 
-        /*
-        LogAnnotationsProcessor.info(messager,null,String.format("find:%b content:%s",find,builder.toString()));
-
-        Matcher classInfoMatcher = pattern.matcher(builder.toString());
-
-        if(!classInfoMatcher.find()){
-            LogAnnotationsProcessor.error(messager,null,"find classinfo error");
-        }
-        int start = classInfoMatcher.start();
-
-        String sub = builder.toString().substring(0, start);
-        Pattern bracketPattern = Pattern.compile("\\{");
-        Matcher bracketMatcher = bracketPattern.matcher(sub);
-        if (bracketMatcher.find()) {
-            return null;  //目前不支持inner class
-        }
-        */
-
         return builder.toString();
     }
 }

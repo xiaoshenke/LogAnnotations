@@ -8,9 +8,10 @@ import java.lang.annotation.Target;
 /**
  * Created by wuxian on 22/11/2016.
  * <p>
- * level: -1-->no log,0-->info,1-->debug,2-->error
- *
- * 具有继承属性 父类被@LOG 注解的函数,子类中不要再注解一次@LOG,但是会忽略具有@NoLog注解的类里的所有Log函数
+ * Current NOT SUPPORT Interface ,Inner-class,anonymous-class(anntation can't be recognized in anonymous-class).
+ * If you annotate an Interface method,you will get a compile error!
+ * If you annotate an Inner-class method,it just be ignored.
+ * So as @NoLog and @LogAll
  */
 
 @Retention(RetentionPolicy.CLASS) //编译期

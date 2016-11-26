@@ -53,7 +53,6 @@ public class AndroidDirHelper {
      * 因为存在inner-class 需要不停的找寻file
      */
     public static File getFileByClassName(String classNameString) throws ProcessingException {
-        LogAnnotationsProcessor.info(messager, null, String.format("getfile class:%s", classNameString));
         File file;
         while ((file = tryGetFile(classNameString)) == null) { //失败 则继续尝试sub-string
             int dot = classNameString.lastIndexOf(DOT);
@@ -61,12 +60,6 @@ public class AndroidDirHelper {
                 return null;
             }
             classNameString = classNameString.substring(0, dot);
-        }
-
-        if (file != null) {
-            LogAnnotationsProcessor.info(messager, null, String.format("find file: %s", file.getAbsolutePath()));
-        } else {
-            LogAnnotationsProcessor.info(messager, null, String.format("fail find file for class:%s", classNameString));
         }
         return file;
     }

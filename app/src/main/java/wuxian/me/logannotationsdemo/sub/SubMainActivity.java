@@ -3,6 +3,7 @@ package wuxian.me.logannotationsdemo.sub;
 import android.util.Log;
 
 import wuxian.me.logannotations.LOG;
+import wuxian.me.logannotations.LogAll;
 import wuxian.me.logannotations.NoLog;
 import wuxian.me.logannotationsdemo.IWhatever;
 import wuxian.me.logannotationsdemo.MainActivity;
@@ -12,11 +13,15 @@ import wuxian.me.logannotationsdemo.MainActivity;
  */
 
 
-public class SubMainActivity extends MainActivity implements IWhatever {
+public class SubMainActivity extends MainActivity {
 
     @Override
     protected void testA() {
         ;
+    }
+
+    public void say() {
+
     }
 
     @LOG
@@ -28,24 +33,16 @@ public class SubMainActivity extends MainActivity implements IWhatever {
             @Override
             public void say() {
 
-                Log.i("SubMainActivity", "in func say ,powered by LOG Annotation");
-
             }
         };
     }
 
-    @LOG
-    @Override
-    public void say() {
-        Log.i("SubMainActivity", "in func say ,powered by LOG Annotation");
-    }
-
     private class What implements IWhatever {
-
         @LOG
         @Override
         public void say() {
 
         }
     }
+
 }

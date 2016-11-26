@@ -87,6 +87,13 @@ public class LogWriter implements IWriter {
             state = STATE_ERROR;
             return this;
         }
+
+        String path = classNameString.replace(".", "/");
+        if (!file.getAbsolutePath().contains(path)) {  //we don't support inner-class yet
+            state = STATE_ERROR;
+            return this;
+        }
+
         this.file = file;
         this.classNameString = classNameString;
         int dot = classNameString.lastIndexOf(".");
@@ -229,7 +236,7 @@ public class LogWriter implements IWriter {
     }
 
     /**
-     * fixme: support inner class..当class和inner class拥有同一个函数名的时候不能正常工作
+     * Currently NOT SUPPORT inner class yet
      */
     //void main(A a,B b)
     @Override
