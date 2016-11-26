@@ -58,7 +58,7 @@ public class ClassInheritanceHelper {
     /**
      * 读取java root下的所有文件 记录继承关系到superClassMap中 --> ???效率?
      */
-    public void dumpAllClassesOnce(File javaRoot) throws ProcessingException {
+    public void dumpAllClasses(File javaRoot) throws ProcessingException {
         if (dumpOnce) {
             return;
         }
@@ -72,7 +72,7 @@ public class ClassInheritanceHelper {
 
         int current = 0;
         while (current < paths.size()) {
-            recursiveDealFile(paths.get(current));
+            dealDirectory(paths.get(current));
             current++;
         }
 
@@ -94,8 +94,10 @@ public class ClassInheritanceHelper {
         return file.getName().endsWith(".java");
     }
 
-    private void recursiveDealFile(@NonNull File dir) {
-        //LogAnnotationsProcessor.info(messager,null,String.format("recursive dir: %s",dir.getAbsolutePath()));
+    /**
+     * 对@dir路径下的文件 若是file,则读取并拿到继承关系map 若是dir,放入paths,等待处理
+     */
+    private void dealDirectory(@NonNull File dir) {
         if (!checkDir(dir)) {
             return;
         }
@@ -108,7 +110,6 @@ public class ClassInheritanceHelper {
                 paths.add(file);
                 continue;
             }
-
             if (checkJavaFile(file)) {
                 getClassHeritance(file);
             }
@@ -119,20 +120,12 @@ public class ClassInheritanceHelper {
      * 读取java文件 拿到继承关系
      */
     private void getClassHeritance(File file) {
-        //LogAnnotationsProcessor.info(messager,null,String.format("get heritance file: %s",file.getAbsolutePath()));
-
         String classInfo = readClassInfo(file);
         if (null == classInfo) {
             return;
         }
-
         String wholeClass = getLongClassName(classInfo);  //xxx.xxx.xxx.class
-        //LogAnnotationsProcessor.info(messager,null,String.format("get class: %s",wholeClass));
         String wholeSuperClass = getLongSuperClass(classInfo); //xxx.xxx.xxx.superclass
-        //LogAnnotationsProcessor.info(messager,null,String.format("get super class: %s",wholeSuperClass));
-
-        //LogAnnotationsProcessor.info(messager,null,String.format("class:%s superclass:%s",wholeClass,wholeSuperClass));
-
         if (wholeClass == null || wholeSuperClass == null) {
             return;
         }
@@ -145,18 +138,31 @@ public class ClassInheritanceHelper {
      * 1 先加入superClassMap里的类
      * 2 遍历java root下的所有file 跳过已经存入到list中的对应路径class
      */
-    public List<String> getSubClasses(@NonNull String classNameString) {
+    private List<String> getSubClasses(@NonNull String classNameString) {
         List<String> subClasses = new ArrayList<>();
-
         Set<String> set = superClassMap.keySet();
+
         Iterator<String> iterator = set.iterator();
         while (iterator.hasNext()) {
-            if (superClassMap.get(iterator.next()).equals(classNameString)) {
-                subClasses.add(iterator.next());
+            String name = iterator.next();
+            if (superClassMap.get(name).equals(classNameString)) {
+                subClasses.add(name);
             }
         }
 
         return subClasses;
+    }
+
+    public List<String> getAllSubClasses(@NonNull String classNameString) {
+        List<String> classes = getSubClasses(classNameString);
+        int current = 0;
+        while (current < classes.size()) {
+            List<String> sub = getSubClasses(classes.get(current));
+            classes.removeAll(sub);
+            classes.addAll(sub);
+            current++;
+        }
+        return classes;
     }
 
     /**

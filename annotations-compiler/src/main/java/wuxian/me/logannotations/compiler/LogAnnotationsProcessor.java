@@ -10,7 +10,6 @@ import wuxian.me.logannotations.NoLog;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -49,27 +48,26 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
 
     ClassInheritanceHelper helper;
 
-    //Map<classname,list<method>>
-    //不含被NoLog注解的class
-    private final @NonNull Map<String, List<AnnotatedMethod>> mGroupedMethodsMap =
-            new LinkedHashMap<>();
-
-    //merge结果map class没有superclass的时候自动为true,否则为false,只有merge过才记为true,
-    //包括被NoLog注解的class
-    private final Map<String, Boolean> mMergedClassMap = new HashMap<>();
-
-    //存储所有class的methods,
-    //包括被NoLog注解的class
+    //存储所有class的methods,包括被NoLog注解的class
     private final Map<String, List<AnnotatedMethod>> mAllMethodsMap = new LinkedHashMap<>();
 
+    //不含被NoLog注解的class
+    private final @NonNull Map<String, List<AnnotatedMethod>> mGroupedMethodsMap = new LinkedHashMap<>();
+
+    /**
+     * 用于merge super class的method 由于存在这种情况 A-->B-->C B被@NoLog注解
+     * 这种情况B中的method不会被记录到mGroupedMethodsMap,但会被记录到mAllMethodsMap
+     */
+    private final Set<String> mMergedSet = new HashSet<>();
+
     //被@NoLog注解的类
-    private final Set<TypeElement> mNoLogList = new HashSet<>();
+    private final List<TypeElement> mNoLogList = new ArrayList<>();
 
     //NoLog具有继承属性 因此清除log的时候 应对它的子类也进行log清除动作
     private final Set<TypeElement> mClearLogList = new HashSet<>();
 
     //被@LogAll注解的类
-    private final Set<TypeElement> mLogAllList = new HashSet<>();
+    private final List<TypeElement> mLogAllList = new ArrayList<>();
 
     @Override
     public synchronized void init(@NonNull ProcessingEnvironment env) {
@@ -88,38 +86,35 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             helper = ClassInheritanceHelper.getInstance(messager, elementUtils);
 
             info(messager, null, "before process nolog");
-            processNoLogAnnotations(roundEnv);  //collect NoLog class
+            collectNoLogAnnotations(roundEnv);  //collect NoLog class
 
             info(messager, null, "before process logall");
-            processLogAllAnnotations(roundEnv); //collect LogAll class
+            collectLogAllAnnotations(roundEnv); //collect LogAll class
 
             info(messager, null, "before collect annotations");
-            collectAnnotations(LOG.class, roundEnv);
-
-            info(messager, null, "before merge annotationclass");
-            mergeAnnotatedClassCollection();
+            collectLOGAnnotations(roundEnv);
 
             info(messager, null, "before dump class");
-            if (mGroupedMethodsMap.size() != 0) {
-                Iterator<String> iterator = mGroupedMethodsMap.keySet().iterator();
-                String className = iterator.next();
-                File javaRoot = AndroidDirHelper.getJavaRoot(className);
-                info(messager, null, String.format("javaRoot: %s", javaRoot.getAbsolutePath()));
-                helper.dumpAllClassesOnce(javaRoot);
-
-            } else if (mNoLogList.size() != 0) {
-                Iterator<TypeElement> iterator = mNoLogList.iterator();
-                String className = iterator.next().getQualifiedName().toString();
-                File javaRoot = AndroidDirHelper.getJavaRoot(className);
-                helper.dumpAllClassesOnce(javaRoot);
+            if (!dumpClasses()) {
+                info(messager, null, "no Annotations found!");
+                return true;
             }
 
         } catch (ProcessingException e) {
             error(messager, e.getElement(), e.getMessage());
         }
 
+        info(messager, null, "before get logall!");
+        getAllLogAllClasses();
+
+        info(messager, null, "before get nolog!");
+        getAllNoLogClasses();
+
+        info(messager, null, "before merge annotationclass");
+        mergeLogAnnotations();
+
         info(messager, null, "before deal inheritance");
-        dealClassInheritance();
+        mergeSuperClassAnnotations();
 
         info(messager, null, "before clear log");
         clearLogByNoLogList();
@@ -130,13 +125,110 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         return true;
     }
 
-    //merge mGroupMethodsMap,mLogAllList
-    private void mergeAnnotatedClassCollection() {
+    /**
+     * @NoLog 具有继承属性
+     * 被@NoLog注解的类的子类里面的LogAll,LOG注解依然有效
+     */
+    private void getAllNoLogClasses() {
+        int current = 0;
+        int size = mNoLogList.size();
+        while (current < size) {
+            List<String> sub = helper.getAllSubClasses(mNoLogList.get(current).getQualifiedName().toString());
+
+            for (String className : sub) {
+                if (mNoLogList.contains(className)) {
+                    continue;
+                }
+                TypeElement ele = elementUtils.getTypeElement(className);
+                if (ele.getAnnotation(LogAll.class) != null) {  //被LogAll注解 跳过
+                    continue;
+                }
+
+                mNoLogList.add(ele);
+            }
+            current++;
+        }
+    }
+
+    /**
+     * @LogAll 具有继承属性
+     */
+    private void getAllLogAllClasses() {
+        int current = 0;
+        int size = mLogAllList.size();
+        while (current < size) {
+            List<String> sub = helper.getAllSubClasses(mLogAllList.get(current).getQualifiedName().toString());
+
+            for (String className : sub) {
+                if (mLogAllList.contains(className)) {
+                    continue;
+                }
+                TypeElement ele = elementUtils.getTypeElement(className);
+                if (ele.getAnnotation(NoLog.class) != null) {  //被NoLog注解 跳过
+                    continue;
+                }
+
+                mLogAllList.add(ele);
+            }
+            current++;
+        }
+    }
+
+    private boolean dumpClasses() throws ProcessingException {
+        String className = null;
+
+        if (mGroupedMethodsMap.size() != 0) {
+            Iterator<String> iterator = mGroupedMethodsMap.keySet().iterator();
+            className = iterator.next();
+
+        } else if (mNoLogList.size() != 0) {
+            Iterator<TypeElement> iterator = mNoLogList.iterator();
+            className = iterator.next().getQualifiedName().toString();
+
+        } else if (mLogAllList.size() != 0) {
+            Iterator<TypeElement> iterator = mNoLogList.iterator();
+            className = iterator.next().getQualifiedName().toString();
+        } else {
+            return false;
+        }
+
+        File javaRoot = AndroidDirHelper.getJavaRoot(className);
+        helper.dumpAllClasses(javaRoot);
+
+        return true;
+    }
+
+    private int getLogAllLevel(TypeElement element) {
+        if (element.getAnnotation(LogAll.class) != null) {
+            return element.getAnnotation(LogAll.class).level();
+        }
+
+        String superClass = helper.getSuperClass(element.getQualifiedName().toString());
+        if (superClass == null) {
+            return LOG.LEVEL_NO_LOG;
+        }
+
+        TypeElement ele = elementUtils.getTypeElement(superClass);
+        if (ele == null) {
+            return LOG.LEVEL_NO_LOG;
+        }
+
+        return getLogAllLevel(ele);
+    }
+
+    /**
+     * Merge @mGroupMethodsMap,@mLogAllList
+     * 每个LogAll注解类的函数都相当于被LOG(LogAll.level)注解;原先的LOG注解依然有效
+     * 因此将LogAll生成的注解merge到mGroupMethodsMap中
+     */
+    private void mergeLogAnnotations() {
         for (TypeElement element : mLogAllList) {
+            String className = element.getQualifiedName().toString();
+
             List<? extends Element> elements = element.getEnclosedElements();
 
             List<AnnotatedMethod> annotatedMethods = new ArrayList<>();
-            int level = element.getAnnotation(LogAll.class).level();
+            int level = getLogAllLevel(element); //如果是继承的 那么这里没有@LogAll注解
 
             for (Element ele : elements) { //收集element下的所有method
                 if (ele.getKind() != ElementKind.METHOD) {
@@ -148,9 +240,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
                 }
                 annotatedMethods.add(annotatedMethod);
             }
-            String className = element.getQualifiedName().toString();
-
-            if (mGroupedMethodsMap.keySet().contains(className)) {  //有则合并 否则加入
+            if (mGroupedMethodsMap.keySet() != null && mGroupedMethodsMap.keySet().contains(className)) {  //有则合并 否则加入
                 mergeMethod(mGroupedMethodsMap.get(className), annotatedMethods);
             } else {
                 mGroupedMethodsMap.put(className, annotatedMethods);
@@ -158,7 +248,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         }
     }
 
-    private void processLogAllAnnotations(@NonNull RoundEnvironment roundEnv) throws ProcessingException {
+    private void collectLogAllAnnotations(@NonNull RoundEnvironment roundEnv) throws ProcessingException {
         Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(LogAll.class);
         for (Element element : elements) {
             if (element.getKind() != ElementKind.CLASS) {
@@ -177,7 +267,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         }
     }
 
-    private void processNoLogAnnotations(@NonNull RoundEnvironment roundEnv) throws ProcessingException {
+    private void collectNoLogAnnotations(@NonNull RoundEnvironment roundEnv) throws ProcessingException {
         Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(NoLog.class);
         for (Element element : elements) {
             if (element.getKind() != ElementKind.CLASS) {
@@ -196,7 +286,8 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
 
     }
 
-    private void collectAnnotations(Class<? extends Annotation> annotationClass, @NonNull RoundEnvironment roundEnv) throws ProcessingException {
+    private void collectLOGAnnotations(@NonNull RoundEnvironment roundEnv) throws ProcessingException {
+        Class<? extends Annotation> annotationClass = LOG.class;
         Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(annotationClass);
 
         for (Element element : elements) {
@@ -285,23 +376,21 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     /**
      * 子类自动继承所有父类的@LOG annotation
      */
-    private void dealClassInheritance() {
+    private void mergeSuperClassAnnotations() {
         Set<String> classNames = mGroupedMethodsMap.keySet();
-        Iterator<String> iterator;
+        Iterator<String> iterator = classNames.iterator();
 
-        iterator = classNames.iterator();  //重新赋值
         while (iterator.hasNext()) {
             String className = iterator.next();
-            if (!mMergedClassMap.containsKey(className)) { //该结点未处理 先去处理
-                recursiveDealClass(helper, className);
+            if (!mMergedSet.contains(className)) { //该结点未处理 先去处理
+                recursiveDealClass(className);
             }
 
             mGroupedMethodsMap.put(className, mAllMethodsMap.get(className));
         }
     }
 
-    private void recursiveDealClass(ClassInheritanceHelper helper, String className) {
-
+    private void recursiveDealClass(String className) {
         if (mGroupedMethodsMap.containsKey(className)) {
             mAllMethodsMap.put(className, mGroupedMethodsMap.get(className));
         } else {
@@ -310,23 +399,19 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
 
         String superClass = helper.getSuperClass(className);
         if (superClass == null) {                           //没有superclass 不需要merge过程
-            mMergedClassMap.put(className, true);
+            mMergedSet.add(className);
             return;
         }
 
-        if (!mMergedClassMap.containsKey(superClass)) { //父结点没有被处理 去处理父结点
-            recursiveDealClass(helper, superClass);
+        if (!mMergedSet.contains(superClass)) { //父结点没有被处理 去处理父结点
+            recursiveDealClass(superClass);
         }
 
         mergeMethod(mAllMethodsMap.get(className), mAllMethodsMap.get(superClass));
-        mMergedClassMap.put(className, true);
+        mMergedSet.add(className);
     }
 
-    /**
-     * 去重
-     */
     private void mergeMethod(List<AnnotatedMethod> toList, List<AnnotatedMethod> fromList) {
-
         for (AnnotatedMethod from : fromList) {
             boolean same = false;
             for (AnnotatedMethod to : toList) {
@@ -337,7 +422,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
                     break;
                 }
             }
-
             if (!same) {
                 toList.add(from);
             }
@@ -376,29 +460,9 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         JavaFileWriter.initMessager(messager);
 
         for (TypeElement element : mNoLogList) {
-            if (mClearLogList.contains(element)) {
-                continue;
-            }
-            recursiveClearLog(element);
-        }
-    }
-
-    //递归删除log
-    private void recursiveClearLog(@NonNull TypeElement element) {
-        if (mClearLogList.contains(element)) {
-            return;
-        }
-        String classNameString = element.getQualifiedName().toString();
-        JavaFileWriter writer = new JavaFileWriter();
-        writer.open(classNameString).clearAllLog().save();
-        mClearLogList.add(element);
-
-        List<String> subClasses = helper.getSubClasses(classNameString);
-        for (String sub : subClasses) {
-            TypeElement typeElement = elementUtils.getTypeElement(sub);
-            if (sub != null) {
-                recursiveClearLog(typeElement);
-            }
+            String classNameString = element.getQualifiedName().toString();
+            JavaFileWriter writer = new JavaFileWriter();
+            writer.open(classNameString).clearAllLog().save();
         }
     }
 
@@ -406,7 +470,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
      * 写文件
      */
     private void writeLogsToJavaFile() {
-
         for (String classNameString : mGroupedMethodsMap.keySet()) {
             JavaFileWriter writer = new JavaFileWriter();
             writer.open(classNameString).addImportIfneed();
@@ -414,7 +477,6 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             for (AnnotatedMethod method : mGroupedMethodsMap.get(classNameString)) {
                 writer.writeLogToMethod(method);
             }
-
             writer.save();
         }
     }

@@ -1,5 +1,7 @@
 package wuxian.me.logannotationsdemo;
 
+import android.util.Log;
+
 import wuxian.me.logannotations.LOG;
 import wuxian.me.logannotations.NoLog;
 
