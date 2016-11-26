@@ -136,8 +136,13 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         int current = 0;
         int size = mNoLogList.size();
         while (current < size) {
-            List<String> sub = helper.getAllSubClasses(mNoLogList.get(current).getQualifiedName().toString());
+            TypeElement element = mNoLogList.get(current);
+            if (!element.getAnnotation(NoLog.class).inheritated()) {
+                current++;
+                continue;
+            }
 
+            List<String> sub = helper.getAllSubClasses(element.getQualifiedName().toString());
             for (String className : sub) {
                 if (mNoLogList.contains(className)) {
                     continue;
@@ -160,7 +165,14 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         int current = 0;
         int size = mLogAllList.size();
         while (current < size) {
-            List<String> sub = helper.getAllSubClasses(mLogAllList.get(current).getQualifiedName().toString());
+
+            TypeElement element = mLogAllList.get(current);
+            if (!element.getAnnotation(LogAll.class).inheritated()) { //LogAll不用继承
+                current++;
+                continue;
+            }
+
+            List<String> sub = helper.getAllSubClasses(element.getQualifiedName().toString());
 
             for (String className : sub) {
                 if (mLogAllList.contains(className)) {
