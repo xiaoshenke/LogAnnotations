@@ -1,4 +1,4 @@
-package wuxian.me.logannotations.compiler;
+package wuxian.me.logannotations.compiler.writer;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -18,6 +18,10 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 
 import wuxian.me.logannotations.LOG;
+import wuxian.me.logannotations.compiler.AnnotatedMethod;
+import wuxian.me.logannotations.compiler.LogAnnotationsProcessor;
+import wuxian.me.logannotations.compiler.ProcessingException;
+import wuxian.me.logannotations.compiler.util.AndroidDirHelper;
 
 /**
  * Created by wuxian on 23/11/2016.
@@ -27,7 +31,7 @@ import wuxian.me.logannotations.LOG;
  * 其它错误为ERROR ERROR时最后写文件不写 而写入原来的文件
  */
 
-public class JavaFileWriter implements IWriter {
+public class LogWriter implements IWriter {
 
     private static final int STATE_NO_STATE = 0;
     private static final int STATE_WRITING_NORMAL = 1;
@@ -53,7 +57,7 @@ public class JavaFileWriter implements IWriter {
         messager = msg;
     }
 
-    public JavaFileWriter() {
+    public LogWriter() {
         ;
     }
 

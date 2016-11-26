@@ -1,4 +1,4 @@
-package wuxian.me.logannotations.compiler;
+package wuxian.me.logannotations.compiler.util;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -15,9 +15,7 @@ import javax.annotation.processing.Messager;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 
-import static wuxian.me.logannotations.compiler.JavaFileHelper.readClassInfo;
-import static wuxian.me.logannotations.compiler.JavaFileHelper.getLongClassName;
-import static wuxian.me.logannotations.compiler.JavaFileHelper.getLongSuperClass;
+import wuxian.me.logannotations.compiler.ProcessingException;
 
 /**
  * Created by wuxian on 22/11/2016.
@@ -120,12 +118,12 @@ public class ClassInheritanceHelper {
      * 读取java文件 拿到继承关系
      */
     private void getClassHeritance(File file) {
-        String classInfo = readClassInfo(file);
+        String classInfo = JavaFileHelper.readClassInfo(file);
         if (null == classInfo) {
             return;
         }
-        String wholeClass = getLongClassName(classInfo);  //xxx.xxx.xxx.class
-        String wholeSuperClass = getLongSuperClass(classInfo); //xxx.xxx.xxx.superclass
+        String wholeClass = JavaFileHelper.getLongClassName(classInfo);  //xxx.xxx.xxx.class
+        String wholeSuperClass = JavaFileHelper.getLongSuperClass(classInfo); //xxx.xxx.xxx.superclass
         if (wholeClass == null || wholeSuperClass == null) {
             return;
         }

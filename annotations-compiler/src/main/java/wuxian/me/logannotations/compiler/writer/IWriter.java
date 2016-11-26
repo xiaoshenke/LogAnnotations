@@ -1,5 +1,7 @@
-package wuxian.me.logannotations.compiler;
+package wuxian.me.logannotations.compiler.writer;
 
+
+import wuxian.me.logannotations.compiler.AnnotatedMethod;
 
 /**
  * Created by wuxian on 23/11/2016.

@@ -52,7 +52,8 @@ If the method under the @LogAll annotated class is also annotated in @LOG with d
 ### TODO
 * support inner-class
 * support interface
-* pass enough tests                   
+* pass enough tests
+* support @LogAll,@NoLog inheritate custom                   
 
 check the code to know more details!
 

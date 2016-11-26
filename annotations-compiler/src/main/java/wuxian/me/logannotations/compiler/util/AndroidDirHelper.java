@@ -1,4 +1,4 @@
-package wuxian.me.logannotations.compiler;
+package wuxian.me.logannotations.compiler.util;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -16,6 +16,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.processing.Messager;
+
+import wuxian.me.logannotations.compiler.LogAnnotationsProcessor;
+import wuxian.me.logannotations.compiler.ProcessingException;
 
 /**
  * Created by wuxian on 23/11/2016.

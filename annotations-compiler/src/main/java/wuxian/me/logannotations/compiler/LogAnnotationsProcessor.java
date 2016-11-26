@@ -6,6 +6,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import wuxian.me.logannotations.LOG;
 import wuxian.me.logannotations.LogAll;
 import wuxian.me.logannotations.NoLog;
+import wuxian.me.logannotations.compiler.util.AndroidDirHelper;
+import wuxian.me.logannotations.compiler.util.ClassInheritanceHelper;
+import wuxian.me.logannotations.compiler.util.JavaFileHelper;
+import wuxian.me.logannotations.compiler.writer.LogWriter;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
@@ -26,7 +30,6 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
@@ -117,10 +120,10 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         mergeSuperClassAnnotations();
 
         info(messager, null, "before clear log");
-        clearLogByNoLogList();
+        clearUselessLogs();
 
         info(messager, null, "before write log");
-        writeLogsToJavaFile();
+        writeLogs();
 
         return true;
     }
@@ -298,79 +301,12 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             } else {
                 ExecutableElement executableElement = (ExecutableElement) element;
                 try {
-                    processMethod(executableElement, annotationClass, roundEnv);
+                    processLOGMethod(executableElement);
                 } catch (IllegalArgumentException e) {
                     throw new ProcessingException(executableElement, e.getMessage());
                 }
             }
         }
-    }
-
-    private void processMethod(ExecutableElement executableElement, Class<? extends Annotation> annotationClass, @NonNull RoundEnvironment roundEnv) throws ProcessingException {
-        //checkMethodValidity(annotatedMethod);
-        TypeElement enclosingClass = findEnclosingClass(executableElement);
-
-        if (enclosingClass == null) {
-            throw new ProcessingException(null,
-                    String.format("Can not find enclosing class for method %s",
-                            executableElement.getSimpleName().toString()));
-        } else {
-            if (enclosingClass.getAnnotation(NoLog.class) != null) { //类被NoLog注解 不处理这个类里面的log
-                return;
-            }
-
-            AnnotatedMethod annotatedMethod = new AnnotatedMethod(executableElement, annotationClass);
-            String className = enclosingClass.getQualifiedName().toString();  //将该element存入一个class的map中
-            List<AnnotatedMethod> groupedMethods = mGroupedMethodsMap.get(className);
-            if (groupedMethods == null) {
-                groupedMethods = new ArrayList<>();
-                mGroupedMethodsMap.put(className, groupedMethods);
-            }
-            groupedMethods.add(annotatedMethod);
-        }
-    }
-
-    /**
-     * 合法性校验 被@Log注解的函数不能是PRIVATE,PROTECTED,ABSTRACT
-     * ??????
-     */
-    private void checkMethodValidity(@NonNull AnnotatedMethod item) throws ProcessingException {
-        ExecutableElement methodElement = item.getExecutableElement();
-        Set<Modifier> modifiers = methodElement.getModifiers();
-
-        // The annotated method needs to be accessible by the generated class which will have
-        // the same package. Public or "package private" (default) methods are required.
-        if (modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.PROTECTED)) {
-            throw new ProcessingException(methodElement,
-                    String.format("The method %s can not be private or protected.",
-                            methodElement.getSimpleName().toString()));
-        }
-
-        // We cannot annotate abstract methods, we need to annotate the actual implementation of
-        // the method on the implementing class.
-        if (modifiers.contains(Modifier.ABSTRACT)) {
-            throw new ProcessingException(methodElement, String.format(
-                    "The method %s is abstract. You can't annotate abstract methods with @%s",
-                    methodElement.getSimpleName().toString(), AnnotatedMethod.class.getSimpleName()));
-        }
-    }
-
-    /**
-     * 找到method从属的class
-     */
-    @Nullable
-    private TypeElement findEnclosingClass(@NonNull ExecutableElement element) {
-        TypeElement enclosingClass;
-
-        ExecutableElement methodElement = element;
-        while (true) {
-            Element enclosingElement = methodElement.getEnclosingElement();
-            if (enclosingElement.getKind() == ElementKind.CLASS) {
-                enclosingClass = (TypeElement) enclosingElement;
-                break;
-            }
-        }
-        return enclosingClass;
     }
 
     /**
@@ -385,8 +321,59 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             if (!mMergedSet.contains(className)) { //该结点未处理 先去处理
                 recursiveDealClass(className);
             }
-
             mGroupedMethodsMap.put(className, mAllMethodsMap.get(className));
+        }
+    }
+
+    /**
+     * 因为LogAll具有继承属性 所以NoLog也应该具有继承属性 必须清理子类中由于LogAll产生的log
+     * must be called before @writeLogs
+     */
+    private void clearUselessLogs() {
+        LogWriter.initMessager(messager);
+
+        for (TypeElement element : mNoLogList) {
+            String classNameString = element.getQualifiedName().toString();
+            LogWriter writer = new LogWriter();
+            writer.open(classNameString).clearAllLog().save();
+        }
+    }
+
+    /**
+     * 写文件
+     */
+    private void writeLogs() {
+        for (String classNameString : mGroupedMethodsMap.keySet()) {
+            LogWriter writer = new LogWriter();
+            writer.open(classNameString).addImportIfneed();
+
+            for (AnnotatedMethod method : mGroupedMethodsMap.get(classNameString)) {
+                writer.writeLogToMethod(method);
+            }
+            writer.save();
+        }
+    }
+
+    private void processLOGMethod(ExecutableElement executableElement) throws ProcessingException {
+        TypeElement enclosingClass = findEnclosingClass(executableElement);
+
+        if (enclosingClass == null) {
+            throw new ProcessingException(null,
+                    String.format("Can not find enclosing class for method %s",
+                            executableElement.getSimpleName().toString()));
+        } else {
+            if (enclosingClass.getAnnotation(NoLog.class) != null) { //类被NoLog注解 不处理这个类里面的log
+                return;
+            }
+
+            AnnotatedMethod annotatedMethod = new AnnotatedMethod(executableElement, LOG.class);
+            String className = enclosingClass.getQualifiedName().toString();  //将该element存入一个class的map中
+            List<AnnotatedMethod> groupedMethods = mGroupedMethodsMap.get(className);
+            if (groupedMethods == null) {
+                groupedMethods = new ArrayList<>();
+                mGroupedMethodsMap.put(className, groupedMethods);
+            }
+            groupedMethods.add(annotatedMethod);
         }
     }
 
@@ -455,30 +442,21 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         return true;
     }
 
-    //因为LogAll具有继承属性 所以NoLog也应该具有继承属性 必须清理子类中由于LogAll产生的log
-    private void clearLogByNoLogList() {
-        JavaFileWriter.initMessager(messager);
-
-        for (TypeElement element : mNoLogList) {
-            String classNameString = element.getQualifiedName().toString();
-            JavaFileWriter writer = new JavaFileWriter();
-            writer.open(classNameString).clearAllLog().save();
-        }
-    }
-
     /**
-     * 写文件
+     * 找到method从属的class
      */
-    private void writeLogsToJavaFile() {
-        for (String classNameString : mGroupedMethodsMap.keySet()) {
-            JavaFileWriter writer = new JavaFileWriter();
-            writer.open(classNameString).addImportIfneed();
-
-            for (AnnotatedMethod method : mGroupedMethodsMap.get(classNameString)) {
-                writer.writeLogToMethod(method);
+    @Nullable
+    private TypeElement findEnclosingClass(@NonNull ExecutableElement element) {
+        TypeElement enclosingClass;
+        ExecutableElement methodElement = element;
+        while (true) {
+            Element enclosingElement = methodElement.getEnclosingElement();
+            if (enclosingElement.getKind() == ElementKind.CLASS) {
+                enclosingClass = (TypeElement) enclosingElement;
+                break;
             }
-            writer.save();
         }
+        return enclosingClass;
     }
 
     public static void error(@NonNull Messager messager, @Nullable Element e, @NonNull String msg, @Nullable Object... args) {
