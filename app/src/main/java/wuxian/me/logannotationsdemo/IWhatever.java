@@ -5,4 +5,5 @@ package wuxian.me.logannotationsdemo;
  */
 
 public interface IWhatever {
+    void say();
 }

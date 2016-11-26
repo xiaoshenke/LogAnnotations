@@ -50,14 +50,32 @@ public class AndroidDirHelper {
     }
 
     /**
-     * 这里不做class名字校验 并且这里的classname长这样 your.package.name.classname
+     * 因为存在inner-class 需要不停的找寻file
      */
     public static File getFileByClassName(String classNameString) throws ProcessingException {
+        LogAnnotationsProcessor.info(messager, null, String.format("getfile class:%s", classNameString));
+        File file;
+        while ((file = tryGetFile(classNameString)) == null) { //失败 则继续尝试sub-string
+            int dot = classNameString.lastIndexOf(DOT);
+            if (dot == -1) {
+                return null;
+            }
+            classNameString = classNameString.substring(0, dot);
+        }
+
+        if (file != null) {
+            LogAnnotationsProcessor.info(messager, null, String.format("find file: %s", file.getAbsolutePath()));
+        } else {
+            LogAnnotationsProcessor.info(messager, null, String.format("fail find file for class:%s", classNameString));
+        }
+        return file;
+    }
+
+    private static File tryGetFile(String classNameString) {
         int dot = classNameString.lastIndexOf(DOT);
         if (dot == -1) {
             return null;
         }
-
         String packageName = classNameString.substring(0, dot);
         String className = classNameString.substring(dot + 1, classNameString.length());
         String packageDir = findJavaDir(packageName).getAbsolutePath();
@@ -69,29 +87,47 @@ public class AndroidDirHelper {
     }
 
     public static File getJavaRoot(String classNameString) throws ProcessingException {
-        int dot = classNameString.lastIndexOf(DOT);
-        if (dot == -1) {
+        if (classNameString == null || classNameString.length() == 0) {
             return null;
         }
 
-        String packageName = classNameString.substring(0, dot);
-        String className = classNameString.substring(dot + 1, classNameString.length());
-        return findJavaDir(packageName);
+        File file;
+        while ((file = findJavaDir(classNameString)) == null) {
+            int dot = classNameString.lastIndexOf(DOT);
+            if (dot == -1) {
+                //return null;
+                throw new ProcessingException(null, "fail to get java root!");
+            }
+            classNameString = classNameString.substring(0, dot);
+        }
+        return file;
     }
 
-    private static boolean initRootDir() throws ProcessingException {
+    private static boolean initRootDir() {
         if (null != rootDir) {
             return true;
         }
         rootDir = findRootDirectory();
-        return true;
+
+        if (rootDir != null) {
+            return true;
+        }
+        return false;
     }
 
-    private static File findJavaDir(String packageName) throws ProcessingException {
-        if (packageName == null || packageName.length() == 0) {
-            throw new ProcessingException(null, "package name is null");
+    /**
+     * find package root path
+     */
+    @Nullable
+    private static File findJavaDir(@NonNull String classNameString) {
+
+        int dot = classNameString.lastIndexOf(DOT);
+        if (dot == -1) {
+            return null;
         }
-        if (rootDir == null) {
+        classNameString = classNameString.substring(0, dot);
+
+        if (null == rootDir) {
             initRootDir();
         }
         if (null == modules) {
@@ -99,7 +135,7 @@ public class AndroidDirHelper {
         }
 
         Pattern p = Pattern.compile("\\.");
-        Matcher m = p.matcher(packageName);
+        Matcher m = p.matcher(classNameString);
         String packagePath = m.replaceAll("/");
 
         for (String module : modules) {
@@ -108,7 +144,7 @@ public class AndroidDirHelper {
             }
         }
 
-        throw new ProcessingException(null, String.format("no module find for package:%s ", packageName));
+        return null;
     }
 
     private static String transformNametoPath(@NonNull String packageName) {
@@ -158,13 +194,14 @@ public class AndroidDirHelper {
     }
 
     @Nullable
-    private static File findRootDirectory() throws ProcessingException {
+    private static File findRootDirectory() {
         File root = new File(new File(".").getAbsolutePath()).getParentFile();
 
         if (root != null && root.isDirectory() && isRootDirectory(root)) {
             return root;
         }
-        throw new ProcessingException(null, "can't find root dir");
+
+        return null;
     }
 
     /**

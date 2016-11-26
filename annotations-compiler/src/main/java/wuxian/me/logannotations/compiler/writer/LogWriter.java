@@ -104,10 +104,10 @@ public class LogWriter implements IWriter {
             state = STATE_WRITING_NORMAL;
         } catch (FileNotFoundException e) {
             state = STATE_ERROR;
-            LogAnnotationsProcessor.error(messager, null, String.format("settings.gradle not find"));
+
         } catch (IOException e) {
             state = STATE_ERROR;
-            LogAnnotationsProcessor.error(messager, null, String.format("reading settings.gradle IOException"));
+
         } catch (Exception e) {
             state = STATE_ERROR;
             LogAnnotationsProcessor.error(messager, null, String.format("exception"));
@@ -116,7 +116,7 @@ public class LogWriter implements IWriter {
                 try {
                     reader.close();
                 } catch (Exception e) {
-                    LogAnnotationsProcessor.error(messager, null, String.format("close settings.gradle IOException"));
+
                 }
             }
         }
@@ -228,6 +228,9 @@ public class LogWriter implements IWriter {
         return -1;
     }
 
+    /**
+     * fixme: support inner class..当class和inner class拥有同一个函数名的时候不能正常工作
+     */
     //void main(A a,B b)
     @Override
     public IWriter writeLogToMethod(AnnotatedMethod method) {

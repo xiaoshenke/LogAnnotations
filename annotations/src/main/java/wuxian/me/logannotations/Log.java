@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS) //编译期
 @Target(ElementType.METHOD)
 public @interface LOG {
-    int level() default -1;
+    int level() default 0;
 
     int LEVEL_NO_LOG = -1;
     int LEVEL_INFO = 0;

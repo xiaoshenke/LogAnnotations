@@ -458,7 +458,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
      * 找到method从属的class
      */
     @Nullable
-    private TypeElement findEnclosingClass(@NonNull ExecutableElement element) {
+    private TypeElement findEnclosingClass(@NonNull ExecutableElement element) throws ProcessingException {
         TypeElement enclosingClass;
         ExecutableElement methodElement = element;
         while (true) {
@@ -466,6 +466,8 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             if (enclosingElement.getKind() == ElementKind.CLASS) {
                 enclosingClass = (TypeElement) enclosingElement;
                 break;
+            } else if (enclosingElement.getKind() == ElementKind.INTERFACE) {
+                throw new ProcessingException(element, "not support Interface yet!"); //throw Error
             }
         }
         return enclosingClass;

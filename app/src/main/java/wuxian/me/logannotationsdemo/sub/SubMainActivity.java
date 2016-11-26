@@ -14,7 +14,6 @@ import wuxian.me.logannotationsdemo.MainActivity;
 
 public class SubMainActivity extends MainActivity implements IWhatever {
 
-    @LOG
     @Override
     protected void testA() {
         ;
@@ -22,6 +21,31 @@ public class SubMainActivity extends MainActivity implements IWhatever {
 
     @LOG
     private void testC() {
-        ;
+        Log.i("SubMainActivity", "in func testC ,powered by LOG Annotation");
+
+        IWhatever whatever = new IWhatever() {
+            @LOG
+            @Override
+            public void say() {
+
+                Log.i("SubMainActivity", "in func say ,powered by LOG Annotation");
+
+            }
+        };
+    }
+
+    @LOG
+    @Override
+    public void say() {
+        Log.i("SubMainActivity", "in func say ,powered by LOG Annotation");
+    }
+
+    private class What implements IWhatever {
+
+        @LOG
+        @Override
+        public void say() {
+
+        }
     }
 }
