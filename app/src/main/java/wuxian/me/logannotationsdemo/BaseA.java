@@ -10,7 +10,7 @@ import wuxian.me.logannotations.NoLog;
  * Created by wuxian on 23/11/2016.
  */
 
-@LogAll(inheritated = false)
+@LogAll(inheritated = true)
 public class BaseA {
 
     protected void call() {

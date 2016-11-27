@@ -12,12 +12,12 @@ import wuxian.me.logannotationsdemo.MainActivity;
  * Created by wuxian on 23/11/2016.
  */
 
-
+@NoLog
 public class SubMainActivity extends MainActivity {
 
     @Override
     protected void testA() {
-        ;
+
     }
 
     public void say() {
@@ -26,7 +26,6 @@ public class SubMainActivity extends MainActivity {
 
     @LOG
     private void testC() {
-        Log.i("SubMainActivity", "in func testC ,powered by LOG Annotation");
 
         IWhatever whatever = new IWhatever() {
             @LOG

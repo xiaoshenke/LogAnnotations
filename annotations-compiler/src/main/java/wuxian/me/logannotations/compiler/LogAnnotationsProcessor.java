@@ -125,6 +125,13 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         info(messager, null, "before write log");
         writeLogs();
 
+        mGroupedMethodsMap.clear();
+        mLogAllList.clear();
+        mNoLogList.clear();
+        mClearLogList.clear();
+        mAllMethodsMap.clear();
+        mMergedSet.clear();
+
         return true;
     }
 

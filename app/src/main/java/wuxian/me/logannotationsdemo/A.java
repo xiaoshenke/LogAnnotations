@@ -14,9 +14,11 @@ public class A extends BaseA {
 
 
     protected void call() {
+        Log.i("A", "in func call ,powered by LOG Annotation");
         ;
     }
 
     protected void callA() {
+        Log.i("A", "in func callA ,powered by LOG Annotation");
     }
 }

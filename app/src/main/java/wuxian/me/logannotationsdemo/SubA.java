@@ -16,10 +16,13 @@ public class SubA extends A {
 
     private void call(String name, String xing) {
 
+        Log.i("SubA", "in func call ,powered by LOG Annotation");
+
     }
 
 
     public void call(String name) {
         super.call(name);
+        Log.i("SubA", "in func call ,powered by LOG Annotation");
     }
 }
