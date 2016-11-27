@@ -367,6 +367,8 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             writer.open(classNameString).addImportIfneed();
 
             for (AnnotatedMethod method : mGroupedMethodsMap.get(classNameString)) {
+                info(messager, null, String.format("write log element: %s", method.getExecutableElement().toString()));
+
                 writer.writeLogToMethod(method);
             }
             writer.save();

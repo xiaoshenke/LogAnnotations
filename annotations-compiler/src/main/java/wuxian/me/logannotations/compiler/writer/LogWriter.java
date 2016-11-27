@@ -164,17 +164,24 @@ public class LogWriter implements IWriter {
     }
 
     private String getSimpleName(@NonNull String origin) {
+        LogAnnotationsProcessor.info(messager, null, String.format("getSimplename origin: %s", origin));
+        //origin = origin.replace("[]","\\.\\.\\.");
         int dot = origin.lastIndexOf(".");
         if (dot == -1) {
+            origin = origin.replace("[]", "\\.\\.\\.");
             return origin;
         }
 
-        return origin.substring(dot + 1, origin.length());
+        String ret = origin.substring(dot + 1, origin.length());
+        ret = ret.replace("[]", "\\.\\.\\.");
+        return ret;
     }
 
+    //fixme void test(final String s);  --> support final,annotation...
     private String getFindMethodRegex(@NonNull ExecutableElement element) {
+        LogAnnotationsProcessor.info(messager, null, String.format("findMethod: %s", element.toString()));
         String name = element.getSimpleName().toString();
-        String returnname = element.getReturnType().toString();
+        String returnname = getSimpleName(element.getReturnType().toString());
 
         String regex = returnname + "\\s+" + name + "\\s*\\(\\s*";
 

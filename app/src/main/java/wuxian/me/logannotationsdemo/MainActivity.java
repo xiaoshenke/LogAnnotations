@@ -8,7 +8,7 @@ import wuxian.me.logannotations.LOG;
 import wuxian.me.logannotations.LogAll;
 import wuxian.me.logannotations.NoLog;
 
-@LogAll
+@LogAll(inheritated = false)
 public class MainActivity extends AppCompatActivity {
 
     @Override
