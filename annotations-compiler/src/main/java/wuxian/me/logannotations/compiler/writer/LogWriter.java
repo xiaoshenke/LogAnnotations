@@ -164,8 +164,6 @@ public class LogWriter implements IWriter {
     }
 
     private String getSimpleName(@NonNull String origin) {
-        LogAnnotationsProcessor.info(messager, null, String.format("getSimplename origin: %s", origin));
-        //origin = origin.replace("[]","\\.\\.\\.");
         int dot = origin.lastIndexOf(".");
         if (dot == -1) {
             origin = origin.replace("[]", "\\.\\.\\.");
@@ -177,9 +175,7 @@ public class LogWriter implements IWriter {
         return ret;
     }
 
-    //fixme void test(final String s);  --> support final,annotation...
     private String getFindMethodRegex(@NonNull ExecutableElement element) {
-        LogAnnotationsProcessor.info(messager, null, String.format("findMethod: %s", element.toString()));
         String name = element.getSimpleName().toString();
         String returnname = getSimpleName(element.getReturnType().toString());
 
@@ -188,12 +184,14 @@ public class LogWriter implements IWriter {
         List<? extends VariableElement> parameters = element.getParameters();
         for (int i = 0; i < parameters.size(); i++) {
             if (i == parameters.size() - 1) {
-                regex = regex + getSimpleName(parameters.get(i).asType().toString()) + "\\s+[\\w]+\\s*";
+                //support method like: void test(final @WHATEVER String );
+                regex = regex + "[@_\\w\\s]*\\s*" + getSimpleName(parameters.get(i).asType().toString()) + "\\s+[\\w]+\\s*";
             } else {
-                regex = regex + getSimpleName(parameters.get(i).asType().toString()) + "\\s+[\\w]+\\s*,\\s*";
+                regex = regex + "[@_\\w\\s]*\\s*" + getSimpleName(parameters.get(i).asType().toString()) + "\\s+[\\w]+\\s*,\\s*";
             }
         }
         regex = regex + "\\)\\s*\\{"; //regex --> void main(){
+        LogAnnotationsProcessor.info(messager, null, String.format("findMethod regex: %s", regex));
         return regex;
     }
 

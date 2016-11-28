@@ -1,5 +1,6 @@
 package wuxian.me.logannotationsdemo;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import wuxian.me.logannotations.LOG;
@@ -16,6 +17,13 @@ public class A extends BaseA {
     protected void call() {
         Log.i("A", "in func call ,powered by LOG Annotation");
         ;
+    }
+
+    @Override
+    protected void call(@NonNull String name) {
+
+        Log.i("A", "in func call ,powered by LOG Annotation");
+
     }
 
     protected void callA() {

@@ -1,5 +1,6 @@
 package wuxian.me.logannotationsdemo;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import wuxian.me.logannotations.LOG;
@@ -11,14 +12,12 @@ import wuxian.me.logannotations.NoLog;
  */
 
 @LogAll
-public class BaseA {
+public abstract class BaseA {
 
     protected void call() {
         Log.i("BaseA", "in func call ,powered by LOG Annotation");
         ;
     }
 
-    protected void call(final String name) {
-        ;
-    }
+    protected abstract void call(@NonNull final String name);
 }
