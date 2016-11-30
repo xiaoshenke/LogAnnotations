@@ -23,7 +23,7 @@ import javax.annotation.processing.Messager;
  * 读文件 用于获取class A extends B implements C等关系
  */
 
-public class JavaFileHelper {
+public class JavaFileHelper implements IJavaHelper {
 
     private static Messager messager;
 
@@ -31,12 +31,22 @@ public class JavaFileHelper {
         messager = msg;
     }
 
+    private static JavaFileHelper helper = null;
+
+    public static JavaFileHelper getInstance() {
+        if (helper == null) {
+            helper = new JavaFileHelper();
+        }
+
+        return helper;
+    }
+
     private JavaFileHelper() {
-        throw new NoSuchElementException("no instance");
+        ;
     }
 
     @Nullable
-    private static String getShortSuperClass(@NonNull String info) {
+    private String getShortSuperClass(@NonNull String info) {
         //class A(<? (extends X & IY &IZ)?,N>)? extends B(<O,P&Q>)? (implement C,D)?{
         Pattern pattern = Pattern.compile(String.format("(?<=extends)\\s+[_\\w]+(?=[\\{\\s])"));
         Matcher matcher = pattern.matcher(info);
@@ -47,7 +57,7 @@ public class JavaFileHelper {
     }
 
     @Nullable
-    private static String getShortClassName(@NonNull String info) {
+    private String getShortClassName(@NonNull String info) {
 
         Pattern pattern = Pattern.compile("(?<=class)\\s+[_\\w]+(?=[\\{\\s])");
         Matcher matcher = pattern.matcher(info);
@@ -57,8 +67,9 @@ public class JavaFileHelper {
         return null;
     }
 
+    @Override
     @Nullable
-    public static String getLongClassName(@NonNull String classInfo) {
+    public String getLongClassName(@NonNull String classInfo) {
         String className = getShortClassName(classInfo);
         if (className == null) {
             return null;
@@ -77,7 +88,8 @@ public class JavaFileHelper {
     }
 
     @Nullable
-    public static String getLongSuperClass(String classInfo) {
+    @Override
+    public String getLongSuperClass(String classInfo) {
         String className = getShortSuperClass(classInfo);
         if (className == null) {
             return null;
@@ -105,7 +117,8 @@ public class JavaFileHelper {
     /**
      * 是否导入了class
      */
-    public static boolean hasAllreadyImport(String className, String content) {
+    @Override
+    public boolean hasAllreadyImport(String className, String content) {
         //import your-super-class-package.superclass;
         Pattern pattern = Pattern.compile(String.format("import.+%s\\s*;", className));
         Matcher matcher = pattern.matcher(content);
@@ -122,7 +135,8 @@ public class JavaFileHelper {
      * 因为在获取package时需要前面的package,import信息 因此保留前面的内容
      */
     @Nullable
-    public static String readClassInfo(@NonNull File file) {
+    @Override
+    public String readClassInfo(@NonNull File file) {
         Pattern pattern = Pattern.compile(String.format("class\\s+[_\\w]+\\s+extends\\s+[_\\w\\s]+\\{"));
 
         StringBuilder builder = new StringBuilder("");

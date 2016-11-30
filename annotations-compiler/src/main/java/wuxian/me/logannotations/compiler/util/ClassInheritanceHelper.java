@@ -97,7 +97,7 @@ public class ClassInheritanceHelper {
     /**
      * 对@dir路径下的文件 若是file,则读取并拿到继承关系map 若是dir,放入paths,等待处理
      */
-    private void dealDirectory(@NonNull File dir) {
+    private void dealDirectory(@NonNull File dir) throws ProcessingException {
         if (!checkDir(dir)) {
             return;
         }
@@ -119,13 +119,16 @@ public class ClassInheritanceHelper {
     /**
      * 读取java文件 拿到继承关系
      */
-    private void getClassHeritance(File file) {
-        String classInfo = JavaFileHelper.readClassInfo(file);
+    private void getClassHeritance(File file) throws ProcessingException {
+        IJavaHelper helper = JavaFileHelper.getInstance();
+        helper = AntlrJavaFileHelper.getInstance();
+        String classInfo = helper.readClassInfo(file);
         if (null == classInfo) {
-            return;
+
+            throw new ProcessingException(null, "error test");
         }
-        String wholeClass = JavaFileHelper.getLongClassName(classInfo);  //xxx.xxx.xxx.class
-        String wholeSuperClass = JavaFileHelper.getLongSuperClass(classInfo); //xxx.xxx.xxx.superclass
+        String wholeClass = helper.getLongClassName(classInfo);  //xxx.xxx.xxx.class
+        String wholeSuperClass = helper.getLongSuperClass(classInfo); //xxx.xxx.xxx.superclass
         if (wholeClass == null || wholeSuperClass == null) {
             return;
         }

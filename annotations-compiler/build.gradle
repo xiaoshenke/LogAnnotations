@@ -1,6 +1,7 @@
 apply plugin: 'java'
 //apply plugin: 'antlr'
 
+//generate java parser using antlr: http://stackoverflow.com/questions/30642144/generating-antlr4-grammar-files-with-package-declaration-in-gradle
 
 repositories {
     mavenCentral()
