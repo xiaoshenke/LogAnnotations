@@ -18,7 +18,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 
 import wuxian.me.logannotations.LOG;
-import wuxian.me.logannotations.antlr.java.JavaLexer;
 import wuxian.me.logannotations.compiler.AnnotatedMethod;
 import wuxian.me.logannotations.compiler.LogAnnotationsProcessor;
 import wuxian.me.logannotations.compiler.ProcessingException;

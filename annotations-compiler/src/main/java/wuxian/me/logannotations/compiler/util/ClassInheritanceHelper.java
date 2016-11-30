@@ -121,7 +121,6 @@ public class ClassInheritanceHelper {
      */
     private void getClassHeritance(File file) throws ProcessingException {
         IJavaHelper helper = JavaFileHelper.getInstance();
-        helper = AntlrJavaFileHelper.getInstance();
         String classInfo = helper.readClassInfo(file);
         if (null == classInfo) {
             throw new ProcessingException(null, "error test");

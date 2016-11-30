@@ -7,9 +7,7 @@ import wuxian.me.logannotations.LOG;
 import wuxian.me.logannotations.LogAll;
 import wuxian.me.logannotations.NoLog;
 import wuxian.me.logannotations.compiler.util.AndroidDirHelper;
-import wuxian.me.logannotations.compiler.util.AntlrJavaFileHelper;
 import wuxian.me.logannotations.compiler.util.ClassInheritanceHelper;
-import wuxian.me.logannotations.compiler.util.ClassListener;
 import wuxian.me.logannotations.compiler.util.JavaFileHelper;
 import wuxian.me.logannotations.compiler.writer.LogWriter;
 
@@ -86,10 +84,8 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     public boolean process(@NonNull Set<? extends TypeElement> set,
                            @NonNull RoundEnvironment roundEnv) {
         JavaFileHelper.setMessager(messager);
-        AntlrJavaFileHelper.setMessager(messager);
         ClassInheritanceHelper.initMessager(messager);
         AndroidDirHelper.initMessager(messager);
-        ClassListener.initMessager(messager);
         try {
             //info(messager, null, "init helper");
             helper = ClassInheritanceHelper.getInstance(elementUtils);
