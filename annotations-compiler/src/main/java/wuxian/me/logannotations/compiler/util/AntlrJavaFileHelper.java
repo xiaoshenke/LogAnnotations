@@ -1,5 +1,6 @@
 package wuxian.me.logannotations.compiler.util;
 
+import org.antlr.runtime.tree.TreeParser;
 import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -7,10 +8,14 @@ import org.antlr.v4.runtime.DiagnosticErrorListener;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.atn.PredictionMode;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.processing.Messager;
@@ -21,6 +26,8 @@ import wuxian.me.logannotations.compiler.LogAnnotationsProcessor;
 
 /**
  * Created by wuxian on 30/11/2016.
+ *
+ * walking through a parser tree: http://stackoverflow.com/questions/15050137/once-grammar-is-complete-whats-the-best-way-to-walk-an-antlr-v4-tree
  */
 
 public class AntlrJavaFileHelper implements IJavaHelper {
@@ -47,10 +54,10 @@ public class AntlrJavaFileHelper implements IJavaHelper {
         ;
     }
 
-    //TODO
     @Override
     public String getLongClassName(String classInfo) {
 
+        LogAnnotationsProcessor.info(messager, null, String.format("getLongclassname"));
         File file = compatibleMap.get(classInfo);
         if (file == null) {
             return null;
@@ -60,7 +67,6 @@ public class AntlrJavaFileHelper implements IJavaHelper {
         if (context == null) {
             return null;
         }
-
 
         return null;
     }
@@ -89,7 +95,12 @@ public class AntlrJavaFileHelper implements IJavaHelper {
             parser.setBuildParseTree(true);
 
             ParserRuleContext t = parser.compilationUnit();  //start parsing
-            LogAnnotationsProcessor.info(messager, null, t.toStringTree());
+            //LogAnnotationsProcessor.info(messager, null, t.toStringTree());
+
+            for (ParseTree p : t.children) {
+                ParseTreeWalker.DEFAULT.walk(new ClassListener(), p);
+            }
+            //
 
             String text = t.getText();
 

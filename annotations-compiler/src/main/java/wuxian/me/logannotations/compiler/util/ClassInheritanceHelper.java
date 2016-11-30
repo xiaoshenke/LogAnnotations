@@ -124,7 +124,6 @@ public class ClassInheritanceHelper {
         helper = AntlrJavaFileHelper.getInstance();
         String classInfo = helper.readClassInfo(file);
         if (null == classInfo) {
-
             throw new ProcessingException(null, "error test");
         }
         String wholeClass = helper.getLongClassName(classInfo);  //xxx.xxx.xxx.class

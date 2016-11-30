@@ -9,6 +9,7 @@ import wuxian.me.logannotations.NoLog;
 import wuxian.me.logannotations.compiler.util.AndroidDirHelper;
 import wuxian.me.logannotations.compiler.util.AntlrJavaFileHelper;
 import wuxian.me.logannotations.compiler.util.ClassInheritanceHelper;
+import wuxian.me.logannotations.compiler.util.ClassListener;
 import wuxian.me.logannotations.compiler.util.JavaFileHelper;
 import wuxian.me.logannotations.compiler.writer.LogWriter;
 
@@ -88,17 +89,18 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
         AntlrJavaFileHelper.setMessager(messager);
         ClassInheritanceHelper.initMessager(messager);
         AndroidDirHelper.initMessager(messager);
+        ClassListener.initMessager(messager);
         try {
-            info(messager, null, "init helper");
+            //info(messager, null, "init helper");
             helper = ClassInheritanceHelper.getInstance(elementUtils);
 
-            info(messager, null, "before process nolog");
+            //info(messager, null, "before process nolog");
             collectNoLogAnnotations(roundEnv);  //collect NoLog class
 
-            info(messager, null, "before process logall");
+            //info(messager, null, "before process logall");
             collectLogAllAnnotations(roundEnv); //collect LogAll class
 
-            info(messager, null, "before collect annotations");
+            //info(messager, null, "before collect annotations");
             collectLOGAnnotations(roundEnv);
 
             info(messager, null, "before dump class");
@@ -109,6 +111,10 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
 
         } catch (ProcessingException e) {
             error(messager, e.getElement(), e.getMessage());
+        }
+
+        if (true) {
+            return true;
         }
 
         info(messager, null, "before get logall!");
