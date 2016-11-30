@@ -1,13 +1,26 @@
 apply plugin: 'java'
+//apply plugin: 'antlr'
+
+
+repositories {
+    mavenCentral()
+}
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    //antlr "org.antlr:antlr4:4.5"
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':annotations')
-
     compile 'com.squareup:javapoet:1.7.0'
     compile 'com.google.auto:auto-common:0.6'
     compile 'org.checkerframework:checker-qual:2.1.4'
+    compile files('libs/antlr-4.5.3-complete.jar')
 }
+
+/*
+generateGrammarSource {
+    outputDirectory = new File("./src/main/java/wuxian/me/logannotations/antlr/java".toString())
+}
+*/
 
 sourceCompatibility = "1.7"
 targetCompatibility = "1.7"
