@@ -6,13 +6,15 @@ import android.util.Log;
 import wuxian.me.logannotations.LOG;
 import wuxian.me.logannotations.LogAll;
 import wuxian.me.logannotations.NoLog;
+import wuxian.me.logannotationsdemo.sub.SubMainActivity;
 
 /**
  * Created by wuxian on 23/11/2016.
  */
 
 
-public class SubA extends A {
+public class SubA<T extends MainActivity & IWhatever & IWhat> extends A {
+
 
     private void call(String name, String xing) {
 

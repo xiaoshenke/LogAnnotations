@@ -27,28 +27,30 @@ public class ClassInheritanceHelper {
     private static final String DOT = ".";
     private static ClassInheritanceHelper helper;
 
-    public static ClassInheritanceHelper getInstance(@NonNull Messager messager
-            , @NonNull Elements elements) throws ProcessingException {
+    public static ClassInheritanceHelper getInstance(@NonNull Elements elements) throws ProcessingException {
         if (helper == null) {
-            helper = new ClassInheritanceHelper(messager, elements);
+            helper = new ClassInheritanceHelper(elements);
         }
         return helper;
     }
 
+    public static void initMessager(@NonNull Messager msg) {
+        if (messager == null) {
+            messager = msg;
+        }
+    }
+
     private Elements elements;
 
-    private Messager messager;
+    private static Messager messager;
 
     private boolean dumpOnce = false;
 
     //key:class value:super-class
     private Map<String, String> superClassMap = new HashMap<>();
 
-    private ClassInheritanceHelper(@NonNull Messager messager, @NonNull Elements elements) throws ProcessingException {
+    private ClassInheritanceHelper(@NonNull Elements elements) throws ProcessingException {
         this.elements = elements;
-        this.messager = messager;
-
-        AndroidDirHelper.initMessager(messager);
     }
 
     private List<File> paths = new ArrayList<>();

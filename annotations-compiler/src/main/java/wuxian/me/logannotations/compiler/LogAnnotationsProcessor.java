@@ -84,9 +84,11 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
     public boolean process(@NonNull Set<? extends TypeElement> set,
                            @NonNull RoundEnvironment roundEnv) {
         JavaFileHelper.setMessager(messager);
+        ClassInheritanceHelper.initMessager(messager);
+        AndroidDirHelper.initMessager(messager);
         try {
             info(messager, null, "init helper");
-            helper = ClassInheritanceHelper.getInstance(messager, elementUtils);
+            helper = ClassInheritanceHelper.getInstance(elementUtils);
 
             info(messager, null, "before process nolog");
             collectNoLogAnnotations(roundEnv);  //collect NoLog class
@@ -214,7 +216,7 @@ public class LogAnnotationsProcessor extends AbstractProcessor {
             return false;
         }
 
-        File javaRoot = AndroidDirHelper.getJavaRoot(className);
+        File javaRoot = AndroidDirHelper.getJavaModuleRoot(className);
         helper.dumpAllClasses(javaRoot);
 
         return true;

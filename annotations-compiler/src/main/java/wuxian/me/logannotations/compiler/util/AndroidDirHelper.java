@@ -42,6 +42,7 @@ public class AndroidDirHelper {
         throw new NoSuchElementException("no instance");
     }
 
+    //only for print log
     public static void initMessager(@NonNull Messager msg) {
         if (messager != null) {
             return;
@@ -64,6 +65,7 @@ public class AndroidDirHelper {
         return file;
     }
 
+    //将@classNameString分解成package name和class name,然后拿到文件路径
     private static File tryGetFile(String classNameString) {
         int dot = classNameString.lastIndexOf(DOT);
         if (dot == -1) {
@@ -71,7 +73,7 @@ public class AndroidDirHelper {
         }
         String packageName = classNameString.substring(0, dot);
         String className = classNameString.substring(dot + 1, classNameString.length());
-        String packageDir = findJavaDir(packageName).getAbsolutePath();
+        String packageDir = findJavaModuleDir(packageName).getAbsolutePath();
         File file = new File(packageDir + "/" + transformNametoPath(packageName) + "/" + className + ".java");
         if (file.exists()) {
             return file;
@@ -79,16 +81,15 @@ public class AndroidDirHelper {
         return null;
     }
 
-    public static File getJavaRoot(String classNameString) throws ProcessingException {
+    public static File getJavaModuleRoot(String classNameString) throws ProcessingException {
         if (classNameString == null || classNameString.length() == 0) {
             return null;
         }
 
         File file;
-        while ((file = findJavaDir(classNameString)) == null) {
+        while ((file = findJavaModuleDir(classNameString)) == null) {
             int dot = classNameString.lastIndexOf(DOT);
             if (dot == -1) {
-                //return null;
                 throw new ProcessingException(null, "fail to get java root!");
             }
             classNameString = classNameString.substring(0, dot);
@@ -101,19 +102,14 @@ public class AndroidDirHelper {
             return true;
         }
         rootDir = findRootDirectory();
-
         if (rootDir != null) {
             return true;
         }
         return false;
     }
 
-    /**
-     * find package root path
-     */
     @Nullable
-    private static File findJavaDir(@NonNull String classNameString) {
-
+    private static File findJavaModuleDir(@NonNull String classNameString) {
         int dot = classNameString.lastIndexOf(DOT);
         if (dot == -1) {
             return null;
@@ -146,7 +142,6 @@ public class AndroidDirHelper {
 
     /**
      * 读取android gradle工程的settings.gradle文件来获取所有android module
-     * @return
      */
     private static boolean initModules() {
         modules = new ArrayList<>();
@@ -189,11 +184,9 @@ public class AndroidDirHelper {
     @Nullable
     private static File findRootDirectory() {
         File root = new File(new File(".").getAbsolutePath()).getParentFile();
-
         if (root != null && root.isDirectory() && isRootDirectory(root)) {
             return root;
         }
-
         return null;
     }
 

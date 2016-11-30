@@ -35,6 +35,7 @@ public class JavaFileHelper {
 
     @Nullable
     private static String getShortSuperClass(@NonNull String info) {
+        //class A(<? (extends X & IY &IZ)?,N>)? extends B(<O,P&Q>)? (implement C,D)?{
         Pattern pattern = Pattern.compile(String.format("(?<=extends)\\s+[_\\w]+(?=[\\{\\s])"));
         Matcher matcher = pattern.matcher(info);
         if (matcher.find()) {
@@ -45,6 +46,7 @@ public class JavaFileHelper {
 
     @Nullable
     private static String getShortClassName(@NonNull String info) {
+
         Pattern pattern = Pattern.compile("(?<=class)\\s+[_\\w]+(?=[\\{\\s])");
         Matcher matcher = pattern.matcher(info);
         if (matcher.find()) {
