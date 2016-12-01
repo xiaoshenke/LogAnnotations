@@ -130,7 +130,6 @@ public class JavaFileHelper implements IJavaHelper {
 
     /**
      * Currently NOT SUPPORT inner class
-     *
      * @return string "package xxxx; import xxxxx;class A extends B implements C{"
      * 因为在获取package时需要前面的package,import信息 因此保留前面的内容
      */
@@ -165,7 +164,6 @@ public class JavaFileHelper implements IJavaHelper {
                 }
             }
         } catch (FileNotFoundException e) {
-            //LogAnnotationsProcessor.error(messager, null, String.format("settings.gradle not find"));
             return null;
         } catch (IOException e) {
             return null;
@@ -186,5 +184,32 @@ public class JavaFileHelper implements IJavaHelper {
         }
 
         return builder.toString();
+    }
+
+    /**
+     * A helper func
+     * usage: findMatchCharactor('{','}',your-string) it will find matched @right charactor
+     * if it meets @left,it should find num(right+1) pos
+     *
+     * @first should not contain @left...
+     */
+    private int findMatchCharactor(char left, char right, @NonNull String content, int first) {
+        if (content.length() == 0) {
+            return -1;
+        }
+
+        int rightFind = 1;
+        for (int i = first; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (c == left) {
+                rightFind += 1;
+            } else if (c == right) {
+                rightFind--;
+                if (rightFind == 0) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 }

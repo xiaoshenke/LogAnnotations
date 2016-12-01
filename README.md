@@ -52,9 +52,11 @@ If the method under the @LogAll annotated class is also annotated in @LOG with d
 ### TODO
 * ~~support @LogAll,@NoLog inheritate attribute~~
 * support inner-class
+* Support whole Java Syntax
                    
 ### OTHER
 * @LOG,@NoLog,@LogAll don't support interface and anonymous class.
+* Currently it only support very limited Java Syntax
 
 check the code to know more details!
 
