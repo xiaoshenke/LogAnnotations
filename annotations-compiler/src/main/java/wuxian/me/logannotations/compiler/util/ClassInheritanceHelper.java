@@ -123,7 +123,7 @@ public class ClassInheritanceHelper {
         IJavaHelper helper = JavaFileHelper.getInstance();
         String classInfo = helper.readClassInfo(file);
         if (null == classInfo) {
-            throw new ProcessingException(null, "error test");
+            return;
         }
         String wholeClass = helper.getLongClassName(classInfo);  //xxx.xxx.xxx.class
         String wholeSuperClass = helper.getLongSuperClass(classInfo); //xxx.xxx.xxx.superclass

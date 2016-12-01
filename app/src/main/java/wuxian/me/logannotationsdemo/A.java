@@ -29,4 +29,8 @@ public class A extends BaseA {
     protected void callA() {
         Log.i("A", "in func callA ,powered by LOG Annotation");
     }
+
+    private static class B {
+        ;
+    }
 }

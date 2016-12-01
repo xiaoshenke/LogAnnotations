@@ -191,7 +191,7 @@ public class LogWriter implements IWriter {
             }
         }
         regex = regex + "\\)\\s*\\{"; //regex --> void main(){
-        LogAnnotationsProcessor.info(messager, null, String.format("findMethod regex: %s", regex));
+        //LogAnnotationsProcessor.info(messager, null, String.format("findMethod regex: %s", regex));
         return regex;
     }
 
