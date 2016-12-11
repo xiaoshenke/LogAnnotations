@@ -15,6 +15,7 @@ import javax.annotation.processing.Messager;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 
+import wuxian.me.logannotations.compiler.LogAnnotationsProcessor;
 import wuxian.me.logannotations.compiler.ProcessingException;
 
 /**
@@ -120,11 +121,13 @@ public class ClassInheritanceHelper {
      * 读取java文件 拿到继承关系
      */
     private void getClassHeritance(File file) throws ProcessingException {
-        IJavaHelper helper = JavaFileHelper.getInstance();
+        LogAnnotationsProcessor.info(messager, null, String.format("getHeritance: %s", file.getAbsolutePath()));
+        JavaFileHelper helper = JavaFileHelper.getInstance();
         String classInfo = helper.readClassInfo(file);
         if (null == classInfo) {
             return;
         }
+        LogAnnotationsProcessor.info(messager, null, String.format("after readClassInfo,before parser"));
         String wholeClass = helper.getLongClassName(classInfo);  //xxx.xxx.xxx.class
         String wholeSuperClass = helper.getLongSuperClass(classInfo); //xxx.xxx.xxx.superclass
         if (wholeClass == null || wholeSuperClass == null) {

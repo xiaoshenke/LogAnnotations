@@ -9,13 +9,16 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.processing.Messager;
+
+import wuxian.me.littleparser.LittleParser;
+import wuxian.me.littleparser.Visitor;
+import wuxian.me.littleparser.astnode.ASTNode;
+import wuxian.me.littleparser.astnode.ClassDeclareNode;
+import wuxian.me.logannotations.compiler.LogAnnotationsProcessor;
 
 /**
  * Created by wuxian on 25/11/2016.
@@ -48,21 +51,42 @@ public class JavaFileHelper implements IJavaHelper {
     @Nullable
     private String getShortSuperClass(@NonNull String info) {
         //class A(<? (extends X & IY &IZ)?,N>)? extends B(<O,P&Q>)? (implement C,D)?{
-        Pattern pattern = Pattern.compile(String.format("(?<=extends)\\s+[_\\w]+(?=[\\{\\s])"));
+        Pattern pattern;//= Pattern.compile(String.format("(?<=extends)\\s+[_\\w]+(?=[\\{\\s])"));
+        pattern = Pattern.compile("class[,.<>_&\\w\\s]+\\{");
         Matcher matcher = pattern.matcher(info);
         if (matcher.find()) {
-            return matcher.group().trim();
+            LittleParser parser = new LittleParser();
+            boolean success = parser.matchClassString(matcher.group());
+            if (success) {
+                Visitor visitor = new Visitor();
+                ASTNode classNode = visitor.visitFirstNode(parser.getParsedASTNode(), ASTNode.NODE_CLASS_DECLARATION);
+                if (classNode != null && classNode instanceof ClassDeclareNode) {
+                    LogAnnotationsProcessor.info(messager, null, String.format("find super name: %s", ((ClassDeclareNode) classNode).getSuperClassName()));
+                    return ((ClassDeclareNode) classNode).getSuperClassName();
+                }
+            }
         }
         return null;
     }
 
     @Nullable
     private String getShortClassName(@NonNull String info) {
-
-        Pattern pattern = Pattern.compile("(?<=class)\\s+[_\\w]+(?=[\\{\\s])");
+        //LogAnnotationsProcessor.info(messager,null,String.format("getShortclass %s",info));
+        Pattern pattern;//= Pattern.compile("(?<=class)\\s+[_\\w]+(?=[\\{\\s])");
+        pattern = Pattern.compile("class[,.<>_&\\w\\s]+\\{");
         Matcher matcher = pattern.matcher(info);
         if (matcher.find()) {
-            return matcher.group().trim();
+            LittleParser parser = new LittleParser();
+            boolean success = parser.matchClassString(matcher.group());
+            if (success) {
+                Visitor visitor = new Visitor();
+                ASTNode classNode = visitor.visitFirstNode(parser.getParsedASTNode(), ASTNode.NODE_CLASS_DECLARATION);
+                if (classNode != null && classNode instanceof ClassDeclareNode) {
+                    LogAnnotationsProcessor.info(messager, null, String.format("find name: %s", ((ClassDeclareNode) classNode).getClassName()));
+                    return ((ClassDeclareNode) classNode).getClassName();
+                }
+
+            }
         }
         return null;
     }
@@ -136,8 +160,9 @@ public class JavaFileHelper implements IJavaHelper {
     @Nullable
     @Override
     public String readClassInfo(@NonNull File file) {
-        Pattern pattern = Pattern.compile(String.format("class\\s+[_\\w]+\\s+extends\\s+[_\\w\\s]+\\{"));
+        Pattern pattern;//= Pattern.compile(String.format("class\\s+[_\\w]+\\s+extends\\s+[_\\w\\s]+\\{"));
 
+        pattern = Pattern.compile("class[,.<>_&\\w\\s]+\\{");
         StringBuilder builder = new StringBuilder("");
         BufferedReader reader = null;
         int lines = 0;

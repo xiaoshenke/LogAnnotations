@@ -14,6 +14,7 @@ dependencies {
     compile 'org.checkerframework:checker-qual:2.1.4'
     compile files('libs/antlr-4.5.3-complete.jar')
     compile files('libs/javaparser-1.0.10.jar')
+    compile files('libs/LittleParser.jar')
 }
 
 /*
